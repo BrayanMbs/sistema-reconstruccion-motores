@@ -36,12 +36,18 @@ export type WorkOrder = {
   description: string;
   status: WorkOrderStatus;
   progress: number;
+  assignedWorkerId: string | null;
   assignedWorker: string | null;
   estimatedDate: string | null;
   createdAt: string;
   intakeNotes: string | null;
   publicNote: string | null;
 };
+
+export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; createdAt: string; updatedAt: string };
+export type WorkOrderInventory = { workOrderId: string; inventoryItemId: string; sku: string; name: string; unit: string; quantity: number; assignedAt: string };
+export type Payment = { id: string; workOrderId: string; workOrderCode: string; clientName: string; amount: number; method: string; reference: string | null; notes: string | null; receivedBy: string | null; createdAt: string };
+export type AppSettings = { company: { name: string; phone: string; address: string }; finance: { currency: string; taxRate: number } };
 
 export type AuditEvent = {
   id: string;
