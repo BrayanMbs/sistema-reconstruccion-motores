@@ -1,0 +1,17 @@
+import { Router } from "express";
+import { listAuditEvents } from "../controllers/audit.controller";
+import { listClients, getClient } from "../controllers/client.controller";
+import { getDashboard } from "../controllers/dashboard.controller";
+import { createUser, getUser, listUsers, updateRole, updateStatus, updateUser } from "../controllers/user.controller";
+import { createWorkOrder, getWorkOrder, listWorkOrders } from "../controllers/work-order.controller";
+import { requireAuthentication, requireRole } from "../middlewares/auth.middleware";
+import { asyncHandler } from "../utils/async-handler";
+export const adminRouter = Router();
+adminRouter.use(requireAuthentication, requireRole("ADMIN"));
+adminRouter.get("/dashboard", asyncHandler(getDashboard));
+adminRouter.route("/users").get(asyncHandler(listUsers)).post(asyncHandler(createUser));
+adminRouter.route("/users/:id").get(asyncHandler(getUser)).patch(asyncHandler(updateUser));
+adminRouter.patch("/users/:id/role", asyncHandler(updateRole)); adminRouter.patch("/users/:id/status", asyncHandler(updateStatus));
+adminRouter.get("/clients", asyncHandler(listClients)); adminRouter.get("/clients/:id", asyncHandler(getClient));
+adminRouter.route("/work-orders").get(asyncHandler(listWorkOrders)).post(asyncHandler(createWorkOrder)); adminRouter.get("/work-orders/:id", asyncHandler(getWorkOrder));
+adminRouter.get("/audit", asyncHandler(listAuditEvents));
