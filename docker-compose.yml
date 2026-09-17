@@ -12,6 +12,7 @@ services:
       - ./backend/database/migrations/001_issue_1_admin.sql:/docker-entrypoint-initdb.d/001_issue_1_admin.sql:ro
       - ./backend/database/migrations/002_admin_operations.sql:/docker-entrypoint-initdb.d/002_admin_operations.sql:ro
       - ./backend/database/migrations/003_operational_workflow.sql:/docker-entrypoint-initdb.d/003_operational_workflow.sql:ro
+      - ./backend/database/migrations/004_seed_admin.sql:/docker-entrypoint-initdb.d/004_seed_admin.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
