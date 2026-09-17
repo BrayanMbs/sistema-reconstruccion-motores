@@ -23,6 +23,7 @@ export type Client = {
 };
 
 export type WorkOrderStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type WorkOrderPriority = "NORMAL" | "HIGH" | "URGENT";
 
 export type WorkOrder = {
   id: string;
@@ -42,7 +43,13 @@ export type WorkOrder = {
   createdAt: string;
   intakeNotes: string | null;
   publicNote: string | null;
+  priority: WorkOrderPriority;
+  startedAt: string | null;
+  completedAt: string | null;
 };
+
+export type WorkOrderEvent = { id: string; workOrderId: string; actorName: string | null; eventType: string; message: string; progress: number | null; createdAt: string };
+export type OperatorNotification = { id: string; workOrderId: string | null; workOrderCode: string | null; type: string; message: string; readAt: string | null; createdAt: string };
 
 export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; createdAt: string; updatedAt: string };
 export type WorkOrderInventory = { workOrderId: string; inventoryItemId: string; sku: string; name: string; unit: string; quantity: number; assignedAt: string };

@@ -99,6 +99,7 @@ El script es idempotente: puede ejecutarse otra vez sin duplicar tablas o índic
 7. En **Finanzas**, registre los pagos recibidos para esa orden.
 8. Consulte **Reportes** para revisar órdenes, stock bajo, pagos y asignaciones.
 9. Ajuste los datos del taller, moneda e impuesto en **Configuración**.
+10. El técnico inicia sesión con su usuario `OPERATOR`, abre **Mis órdenes asignadas**, inicia la reparación, registra avances con observaciones y la finaliza al llegar a 100%.
 
 ## 8. Solución rápida de problemas
 

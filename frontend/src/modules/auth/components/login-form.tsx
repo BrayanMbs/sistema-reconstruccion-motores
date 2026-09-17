@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/services/api";
 import { Icon } from "@/shared/components/icon";
 import { getSupabase } from "@/shared/services/supabase";
+import type { AppUser } from "@/shared/models/admin";
+import { roleHome } from "@/shared/utils/role-home";
 
-type LoginResponse = { user: unknown; session: { accessToken: string; refreshToken: string } };
+type LoginResponse = { user: AppUser; session: { accessToken: string; refreshToken: string } };
 
 export function LoginForm() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export function LoginForm() {
       if (!response.ok) throw new ApiError(result.message ?? "No fue posible iniciar sesión", response.status);
       const { error: sessionError } = await supabase.auth.setSession({ access_token: result.session.accessToken, refresh_token: result.session.refreshToken });
       if (sessionError) throw sessionError;
-      router.replace("/admin/dashboard"); router.refresh();
+      router.replace(roleHome(result.user.role)); router.refresh();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No fue posible iniciar sesión"); }
     finally { setLoading(false); }
   };
