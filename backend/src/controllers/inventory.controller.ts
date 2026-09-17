@@ -1,0 +1,10 @@
+import type { Request, Response } from "express";
+import type { CreateInventoryItemDto } from "../dtos/admin.dtos";
+import { InventoryService } from "../services/inventory.service";
+import { optionalText, requirePositiveNumber, requireText } from "../validators/common.validators";
+const service = new InventoryService();
+export const listInventory = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.list(typeof request.query.search === "string" ? request.query.search : undefined) }); };
+export const createInventory = async (request: Request, response: Response): Promise<void> => { const input: CreateInventoryItemDto = { sku: requireText(request.body.sku, "Código", 80), name: requireText(request.body.name, "Nombre", 180), description: optionalText(request.body.description, "Descripción", 2000), unit: requireText(request.body.unit, "Unidad", 40), stockQuantity: Number(request.body.stockQuantity ?? 0), minimumStock: Number(request.body.minimumStock ?? 0) }; if (!Number.isFinite(input.stockQuantity) || input.stockQuantity < 0 || !Number.isFinite(input.minimumStock) || input.minimumStock < 0) throw new Error("Las existencias no pueden ser negativas"); response.status(201).json({ item: await service.create(input, request.appUser!.id) }); };
+export const listOrderInventory = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.allocations(requireText(request.params.id, "Orden")) }); };
+export const allocateInventory = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.allocate(requireText(request.params.id, "Orden"), requireText(request.body.inventoryItemId, "Artículo"), requirePositiveNumber(request.body.quantity, "Cantidad"), request.appUser!.id) }); };
+export const releaseInventory = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.release(requireText(request.params.id, "Orden"), requireText(request.params.itemId, "Artículo"), request.appUser!.id) }); };

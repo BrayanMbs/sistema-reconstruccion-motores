@@ -23,6 +23,12 @@ export const requireEmail = (value: unknown): string => {
   return email;
 };
 
+export const requirePositiveNumber = (value: unknown, field: string): number => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) throw new AppError(`${field} debe ser un número mayor que cero`, 422, "VALIDATION_ERROR");
+  return parsed;
+};
+
 export const pageFromQuery = (value: unknown): number => {
   const page = Number(value ?? 1);
   return Number.isInteger(page) && page > 0 ? page : 1;

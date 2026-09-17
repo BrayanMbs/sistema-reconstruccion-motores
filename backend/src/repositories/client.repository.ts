@@ -1,5 +1,6 @@
 import type { QueryResultRow } from "pg";
 import { databasePool } from "../config/database";
+import type { CreateClientDto } from "../dtos/admin.dtos";
 import type { Client } from "../models/domain";
 
 const mapClient = (row: QueryResultRow): Client => ({
@@ -29,6 +30,15 @@ export class ClientRepository {
   async findById(id: string): Promise<Client | null> {
     const result = await databasePool.query("SELECT * FROM clients WHERE id = $1", [id]);
     return result.rowCount ? mapClient(result.rows[0]) : null;
+  }
+
+  async create(input: CreateClientDto): Promise<Client> {
+    const result = await databasePool.query(
+      `INSERT INTO clients (full_name, identification_type, identification, phone, email, address)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [input.fullName, input.identificationType, input.identification, input.phone ?? null, input.email ?? null, input.address ?? null]
+    );
+    return mapClient(result.rows[0]);
   }
 
   async count(): Promise<number> {

@@ -24,8 +24,13 @@ No requiere parámetros ni sesión. Responde `200`:
 - `GET|PATCH /api/admin/users/:id`: detalle y actualización de nombre/rol.
 - `PATCH /api/admin/users/:id/role`: cambio explícito de rol.
 - `PATCH /api/admin/users/:id/status`: activa o inactiva un perfil; no permite auto-inactivación.
-- `GET /api/admin/clients` y `GET /api/admin/clients/:id`: consulta y búsqueda de clientes.
+- `GET|POST /api/admin/clients` y `GET /api/admin/clients/:id`: consulta, búsqueda y alta de clientes. El alta requiere nombre completo, tipo y número de identificación; teléfono, correo y dirección son opcionales.
 - `GET|POST /api/admin/work-orders` y `GET /api/admin/work-orders/:id`: supervisión, detalle y alta de órdenes.
 - `GET /api/admin/audit`: historial de solo lectura, filtrable por usuario, operación y fechas.
+- `GET /api/admin/operators`: personal operativo activo y órdenes asignadas.
+- `GET|POST /api/admin/inventory`: catálogo y existencias; `GET|POST|DELETE /api/admin/work-orders/:id/inventory`: insumos asignados a una orden.
+- `PATCH /api/admin/work-orders/:id/assignee`: asigna una orden a un usuario operativo activo.
+- `GET|POST /api/admin/payments`: ingresos vinculados a órdenes de trabajo.
+- `GET /api/admin/reports/summary` y `GET|PUT /api/admin/settings`: indicadores administrativos y configuración de negocio.
 
 Las respuestas de error no incluyen secretos ni trazas. Se utilizan `400/401/403/404/409/422/500` según corresponda.

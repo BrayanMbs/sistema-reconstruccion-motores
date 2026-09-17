@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/shared/services/api";
+import { Icon } from "@/shared/components/icon";
 import { getSupabase } from "@/shared/services/supabase";
 
 type LoginResponse = { user: unknown; session: { accessToken: string; refreshToken: string } };
@@ -32,7 +33,7 @@ export function LoginForm() {
   };
 
   return <form onSubmit={submit} className="stitch-card w-full max-w-[420px] p-7 sm:p-8">
-    <div className="mb-7 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-blue-700"><span className="material-symbols-outlined">settings</span></div><div><h1 className="text-xl font-bold text-slate-900">Motor Repair</h1><p className="text-sm text-slate-500">Panel de Administración</p></div></div>
+    <div className="mb-7 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-blue-700"><Icon name="settings" /></div><div><h1 className="text-xl font-bold text-slate-900">Motor Repair</h1><p className="text-sm text-slate-500">Panel de Administración</p></div></div>
     <h2 className="text-2xl font-bold text-slate-900">Iniciar sesión</h2><p className="mt-1 text-sm text-slate-500">Accede con tu cuenta administrativa.</p>
     {error && <p role="alert" className="mt-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
     <label className="mt-6 block text-sm font-medium text-slate-700">Correo electrónico<input className="stitch-input mt-1.5" value={email} type="email" autoComplete="email" onChange={(event) => setEmail(event.target.value)} /></label>

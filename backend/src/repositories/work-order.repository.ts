@@ -7,11 +7,11 @@ const mapOrder = (row: QueryResultRow): WorkOrder => ({
   id: row.id, code: row.code, clientId: row.client_id, clientName: row.client_name,
   engineBrand: row.engine_brand, engineModel: row.engine_model, engineSerial: row.engine_serial,
   serviceType: row.service_type, description: row.description, status: row.status,
-  progress: row.progress, assignedWorker: row.assigned_worker, estimatedDate: row.estimated_date,
+  progress: row.progress, assignedWorkerId: row.assigned_worker_id, assignedWorker: row.assigned_worker_name ?? row.assigned_worker, estimatedDate: row.estimated_date,
   createdAt: row.created_at, intakeNotes: row.intake_notes, publicNote: row.public_note
 });
 
-const selectSql = `SELECT o.*, c.full_name AS client_name FROM work_orders o JOIN clients c ON c.id = o.client_id`;
+const selectSql = `SELECT o.*, c.full_name AS client_name, worker.full_name AS assigned_worker_name FROM work_orders o JOIN clients c ON c.id = o.client_id LEFT JOIN app_users worker ON worker.id = o.assigned_worker_id`;
 
 export class WorkOrderRepository {
   async list(filters: { search?: string; status?: string; page: number; limit: number }) {
@@ -42,6 +42,17 @@ export class WorkOrderRepository {
     if (!order) throw new Error("La orden creada no se encontró");
     return order;
   }
+
+  async assignWorker(orderId: string, workerId: string): Promise<WorkOrder | null> {
+    const result = await databasePool.query(
+      `UPDATE work_orders SET assigned_worker_id = $2, assigned_worker = (SELECT full_name FROM app_users WHERE id = $2)
+       WHERE id = $1 RETURNING id`,
+      [orderId, workerId]
+    );
+    return result.rowCount ? this.findById(result.rows[0].id) : null;
+  }
+
+  async workerWorkload(workerId: string): Promise<number> { const result = await databasePool.query("SELECT count(*)::int AS count FROM work_orders WHERE assigned_worker_id = $1 AND status IN ('PENDING','IN_PROGRESS')", [workerId]); return result.rows[0].count; }
 
   async dashboardCounts() {
     const result = await databasePool.query(
