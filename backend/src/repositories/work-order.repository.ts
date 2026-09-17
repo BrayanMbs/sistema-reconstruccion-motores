@@ -8,7 +8,7 @@ const mapOrder = (row: QueryResultRow): WorkOrder => ({
   engineBrand: row.engine_brand, engineModel: row.engine_model, engineSerial: row.engine_serial,
   serviceType: row.service_type, description: row.description, status: row.status,
   progress: row.progress, assignedWorkerId: row.assigned_worker_id, assignedWorker: row.assigned_worker_name ?? row.assigned_worker, estimatedDate: row.estimated_date,
-  createdAt: row.created_at, intakeNotes: row.intake_notes, publicNote: row.public_note
+  createdAt: row.created_at, intakeNotes: row.intake_notes, publicNote: row.public_note, priority: row.priority, startedAt: row.started_at, completedAt: row.completed_at
 });
 
 const selectSql = `SELECT o.*, c.full_name AS client_name, worker.full_name AS assigned_worker_name FROM work_orders o JOIN clients c ON c.id = o.client_id LEFT JOIN app_users worker ON worker.id = o.assigned_worker_id`;
@@ -33,10 +33,10 @@ export class WorkOrderRepository {
 
   async create(input: CreateWorkOrderDto, createdBy: string): Promise<WorkOrder> {
     const result = await databasePool.query(
-      `INSERT INTO work_orders (code, client_id, engine_brand, engine_model, engine_serial, service_type, description, estimated_date, intake_notes, public_note, status, created_by)
-       VALUES ('OT-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('work_order_code_seq')::text, 5, '0'), $1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 'PENDING'), $11)
+      `INSERT INTO work_orders (code, client_id, engine_brand, engine_model, engine_serial, service_type, description, estimated_date, intake_notes, public_note, status, priority, created_by)
+       VALUES ('OT-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('work_order_code_seq')::text, 5, '0'), $1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, 'PENDING'), COALESCE($11, 'NORMAL'), $12)
        RETURNING id`,
-      [input.clientId, input.engineBrand, input.engineModel, input.engineSerial ?? null, input.serviceType, input.description, input.estimatedDate ?? null, input.intakeNotes ?? null, input.publicNote ?? null, input.status ?? null, createdBy]
+      [input.clientId, input.engineBrand, input.engineModel, input.engineSerial ?? null, input.serviceType, input.description, input.estimatedDate ?? null, input.intakeNotes ?? null, input.publicNote ?? null, input.status ?? null, input.priority ?? null, createdBy]
     );
     const order = await this.findById(result.rows[0].id);
     if (!order) throw new Error("La orden creada no se encontró");

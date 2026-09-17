@@ -41,11 +41,11 @@ El backend separa presentación, aplicación, dominio e infraestructura:
 
 Supabase Auth será el proveedor de autenticación. La base incluye el punto de extensión para verificar sus tokens, pero no implementa login, roles ni JWT personalizado. PostgreSQL se configura exclusivamente mediante variables de entorno.
 
-## Implementación administrativa del Issue #1
+## Implementación administrativa y operativa
 
-El backend autentica tokens con Supabase Auth y luego consulta `app_users` en PostgreSQL. El middleware común exige sesión, usuario activo y rol `ADMIN` antes de registrar las rutas administrativas. Las operaciones que cambian usuarios u órdenes crean un evento en `audit_events`; la auditoría solo expone lectura.
+El backend autentica tokens con Supabase Auth y luego consulta `app_users` en PostgreSQL. El middleware común exige sesión y usuario activo; cada área restringe sus rutas por rol. `/api/admin` requiere `ADMIN`, mientras que `/api/operativo` requiere `OPERATOR` y además verifica que la orden consultada o modificada pertenezca al trabajador autenticado. Las operaciones relevantes crean eventos de auditoría; el flujo operativo además conserva historial y notificaciones propios.
 
-La migración `backend/database/migrations/001_issue_1_admin.sql` define `app_users`, `clients`, `work_orders` y `audit_events`. Docker la ejecuta al inicializar un volumen nuevo de PostgreSQL.
+Las migraciones `001_issue_1_admin.sql`, `002_admin_operations.sql` y `003_operational_workflow.sql` definen los datos administrativos y operativos. Docker las ejecuta al inicializar un volumen nuevo de PostgreSQL.
 
 ## Docker Compose
 

@@ -10,7 +10,7 @@ export class AuthService {
     if (!client) throw new AppError("Supabase Auth no está configurado", 503, "AUTH_NOT_CONFIGURED");
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error || !data.user || !data.session) throw new AppError("Credenciales inválidas", 401, "INVALID_CREDENTIALS");
-    const user = await this.assertAdminProfile(data.user.id);
+    const user = await this.assertActiveProfile(data.user.id);
     return { user, session: { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, expiresAt: data.session.expires_at } };
   }
 
@@ -29,9 +29,4 @@ export class AuthService {
     return user;
   }
 
-  private async assertAdminProfile(id: string) {
-    const user = await this.assertActiveProfile(id);
-    if (user.role !== "ADMIN") throw new AppError("Esta cuenta no tiene acceso administrativo", 403, "INSUFFICIENT_ROLE");
-    return user;
-  }
 }

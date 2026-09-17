@@ -23,9 +23,9 @@ describe("AuthService authorization", () => {
     await expect(new AuthService().authenticateToken("token")).rejects.toMatchObject({ statusCode: 403, code: "USER_INACTIVE" });
   });
 
-  it("rejects a valid session without the ADMIN role at login", async () => {
+  it("allows an active operational user to sign in", async () => {
     mocks.signInWithPassword.mockResolvedValue({ data: { user: { id: user().id }, session: { access_token: "access", refresh_token: "refresh", expires_at: 1 } }, error: null });
-    mocks.findById.mockResolvedValue(user({ role: "CASHIER" }));
-    await expect(new AuthService().signIn("cashier@example.com", "secure-password")).rejects.toMatchObject({ statusCode: 403, code: "INSUFFICIENT_ROLE" });
+    mocks.findById.mockResolvedValue(user({ role: "OPERATOR" }));
+    await expect(new AuthService().signIn("operator@example.com", "secure-password")).resolves.toMatchObject({ user: { role: "OPERATOR" } });
   });
 });

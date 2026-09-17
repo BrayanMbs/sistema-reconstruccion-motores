@@ -1,4 +1,4 @@
-import type { Role, WorkOrderStatus } from "../models/domain";
+import type { Role, WorkOrderPriority, WorkOrderStatus } from "../models/domain";
 
 export type CreateUserDto = { fullName: string; email: string; password: string; role: Role };
 export type UpdateUserDto = { fullName?: string; role?: Role };
@@ -16,4 +16,7 @@ export type CreateWorkOrderDto = {
   intakeNotes?: string | null;
   publicNote?: string | null;
   status?: WorkOrderStatus;
+  priority?: WorkOrderPriority;
 };
+
+export type UpdateOperationalProgressDto = { progress: number; observation: string };

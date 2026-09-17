@@ -20,6 +20,7 @@ La rama `develop` contiene la implementación administrativa integrada en los co
 | Reportes | Ver el resumen de órdenes, inventario, pagos y cobertura de asignaciones. |
 | Configuración | Guardar nombre, teléfono y dirección del taller, moneda e impuesto. |
 | Auditoría | Consultar los eventos administrativos registrados por el backend. |
+| Portal operativo | El técnico consulta únicamente sus órdenes, inicia y actualiza reparaciones, registra observaciones, finaliza trabajos, consulta actividad y lee notificaciones. |
 
 ## Relación entre módulos
 
@@ -38,6 +39,7 @@ Reportes ──> consolida órdenes, inventario, asignaciones y pagos
 
 - Se agregó `assigned_worker_id` a `work_orders`.
 - Se incorporaron las tablas `inventory_items`, `work_order_inventory`, `payments` y `app_settings` mediante `backend/database/migrations/002_admin_operations.sql`.
+- La migración `003_operational_workflow.sql` agrega prioridad, fechas de inicio/finalización, historial operativo y notificaciones persistentes.
 - Las asignaciones de inventario se ejecutan en transacción y rechazan cantidades mayores a la existencia disponible.
 - Las nuevas rutas administrativas son:
   - `GET /api/admin/operators`
@@ -47,6 +49,7 @@ Reportes ──> consolida órdenes, inventario, asignaciones y pagos
   - `GET|POST /api/admin/payments`
   - `GET /api/admin/reports/summary`
   - `GET|PUT /api/admin/settings`
+  - Rutas seguras bajo `/api/operativo` para dashboard, órdenes propias, historial, avances, finalización, actividad y notificaciones.
 
 La especificación completa de rutas está en [api.md](api.md).
 

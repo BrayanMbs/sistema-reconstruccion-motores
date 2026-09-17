@@ -34,3 +34,17 @@ No requiere parámetros ni sesión. Responde `200`:
 - `GET /api/admin/reports/summary` y `GET|PUT /api/admin/settings`: indicadores administrativos y configuración de negocio.
 
 Las respuestas de error no incluyen secretos ni trazas. Se utilizan `400/401/403/404/409/422/500` según corresponda.
+
+## Personal operativo
+
+Las rutas `/api/operativo/*` requieren un token válido de un perfil activo con rol `OPERATOR`. El backend filtra las órdenes por `assigned_worker_id`; un trabajador no puede acceder a una orden ajena modificando la URL.
+
+- `GET /api/operativo/dashboard`: métricas y próximas órdenes del trabajador autenticado.
+- `GET /api/operativo/orders`: lista paginada con filtros de búsqueda, estado, prioridad y fecha.
+- `GET /api/operativo/orders/:id`: detalle operativo de una orden propia.
+- `GET /api/operativo/orders/:id/history`: historial acumulado de eventos de esa orden propia.
+- `POST /api/operativo/orders/:id/start`: cambia una orden pendiente propia a en proceso.
+- `PATCH /api/operativo/orders/:id/progress`: registra avance creciente entre 0 y 100, más observación.
+- `POST /api/operativo/orders/:id/complete`: finaliza una orden propia, fija el avance en 100 y registra la observación final.
+- `GET /api/operativo/activity`: actividad relacionada exclusivamente con el trabajador autenticado.
+- `GET /api/operativo/notifications` y `PATCH /api/operativo/notifications/:id/read`: notificaciones propias y marcado de lectura.
