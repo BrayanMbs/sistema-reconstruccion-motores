@@ -1,0 +1,14 @@
+import type { Request, Response } from "express";
+import type { CreateUserDto, UpdateUserDto } from "../dtos/admin.dtos";
+import { roles } from "../models/domain";
+import { UserService } from "../services/user.service";
+import { AppError } from "../utils/app-error";
+import { limitFromQuery, pageFromQuery, requireEmail, requireText } from "../validators/common.validators";
+const service = new UserService();
+const roleFrom = (value: unknown) => { if (typeof value !== "string" || !roles.includes(value as (typeof roles)[number])) throw new AppError("Rol no válido", 422, "VALIDATION_ERROR"); return value as (typeof roles)[number]; };
+export const listUsers = async (request: Request, response: Response): Promise<void> => { const page = pageFromQuery(request.query.page); const limit = limitFromQuery(request.query.limit); const result = await service.list(typeof request.query.search === "string" ? request.query.search : undefined, typeof request.query.role === "string" ? request.query.role : undefined, typeof request.query.active === "string" ? request.query.active : undefined, page, limit); response.json({ ...result, page, limit }); };
+export const getUser = async (request: Request, response: Response): Promise<void> => { response.json({ user: await service.get(requireText(request.params.id, "Identificador")) }); };
+export const createUser = async (request: Request, response: Response): Promise<void> => { const input: CreateUserDto = { fullName: requireText(request.body.fullName, "Nombre"), email: requireEmail(request.body.email), password: requireText(request.body.password, "Contraseña", 128), role: roleFrom(request.body.role) }; response.status(201).json({ user: await service.create(input, request.appUser!.id) }); };
+export const updateUser = async (request: Request, response: Response): Promise<void> => { const input: UpdateUserDto = {}; if (request.body.fullName !== undefined) input.fullName = requireText(request.body.fullName, "Nombre"); if (request.body.role !== undefined) input.role = roleFrom(request.body.role); response.json({ user: await service.update(requireText(request.params.id, "Identificador"), input, request.appUser!.id) }); };
+export const updateRole = async (request: Request, response: Response): Promise<void> => { response.json({ user: await service.updateRole(requireText(request.params.id, "Identificador"), roleFrom(request.body.role), request.appUser!.id) }); };
+export const updateStatus = async (request: Request, response: Response): Promise<void> => { if (typeof request.body.isActive !== "boolean") throw new AppError("isActive debe ser booleano", 422, "VALIDATION_ERROR"); response.json({ user: await service.updateStatus(requireText(request.params.id, "Identificador"), request.body.isActive, request.appUser!.id) }); };

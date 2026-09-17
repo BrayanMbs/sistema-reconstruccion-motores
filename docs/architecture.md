@@ -41,6 +41,12 @@ El backend separa presentación, aplicación, dominio e infraestructura:
 
 Supabase Auth será el proveedor de autenticación. La base incluye el punto de extensión para verificar sus tokens, pero no implementa login, roles ni JWT personalizado. PostgreSQL se configura exclusivamente mediante variables de entorno.
 
+## Implementación administrativa del Issue #1
+
+El backend autentica tokens con Supabase Auth y luego consulta `app_users` en PostgreSQL. El middleware común exige sesión, usuario activo y rol `ADMIN` antes de registrar las rutas administrativas. Las operaciones que cambian usuarios u órdenes crean un evento en `audit_events`; la auditoría solo expone lectura.
+
+La migración `backend/database/migrations/001_issue_1_admin.sql` define `app_users`, `clients`, `work_orders` y `audit_events`. Docker la ejecuta al inicializar un volumen nuevo de PostgreSQL.
+
 ## Docker Compose
 
 Docker Compose es una herramienta opcional de desarrollo local. Levanta frontend, backend y PostgreSQL en `motores-network`, con un volumen `postgres_data` y una comprobación de salud de PostgreSQL.

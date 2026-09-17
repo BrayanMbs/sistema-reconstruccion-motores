@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import HomePage from "./page";
+import { StatusBadge } from "../shared/components/status-badge";
 
-describe("HomePage", () => {
-  it("muestra el nombre del sistema", () => {
-    render(<HomePage />);
-    expect(screen.getByRole("heading", { name: /sistema de reconstrucción de motores/i })).toBeTruthy();
+describe("StatusBadge", () => {
+  it("muestra el estado activo", () => {
+    render(<StatusBadge active />);
+    expect(screen.getByText("Activo")).toBeTruthy();
   });
 });

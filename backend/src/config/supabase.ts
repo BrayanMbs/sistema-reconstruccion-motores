@@ -12,3 +12,14 @@ export const createSupabaseClient = (): SupabaseClient | null => {
 
   return createClient(env.supabase.url, env.supabase.anonKey);
 };
+
+/** Only use this server-side client for administrative account provisioning. */
+export const createSupabaseAdminClient = (): SupabaseClient | null => {
+  if (!env.supabase.url || !env.supabase.serviceRoleKey) {
+    return null;
+  }
+
+  return createClient(env.supabase.url, env.supabase.serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+};
