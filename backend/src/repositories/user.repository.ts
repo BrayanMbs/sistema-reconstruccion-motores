@@ -18,6 +18,11 @@ export class UserRepository {
     return result.rowCount ? mapUser(result.rows[0]) : null;
   }
 
+  async findByEmail(email: string): Promise<AppUser | null> {
+    const result = await databasePool.query("SELECT * FROM app_users WHERE LOWER(email) = LOWER($1)", [email]);
+    return result.rowCount ? mapUser(result.rows[0]) : null;
+  }
+
   async list(search: string | undefined, role: string | undefined, active: string | undefined, page: number, limit: number) {
     const clauses: string[] = [];
     const params: unknown[] = [];
