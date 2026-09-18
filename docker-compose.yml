@@ -6,6 +6,7 @@ services:
       PORT: 8080
       DATABASE_URL: ${DATABASE_URL:-}
       DB_SSL: ${DB_SSL:-true}
+      DB_SSL_REJECT_UNAUTHORIZED: ${DB_SSL_REJECT_UNAUTHORIZED:-false}
       DB_POOL_MAX: ${DB_POOL_MAX:-10}
       CLOUD_DATABASE_REQUIRED: "true"
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}

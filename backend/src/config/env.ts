@@ -8,18 +8,44 @@ const asNumber = (value: string | undefined, fallback: number): number => {
 
 const databaseUrl = process.env.DATABASE_URL;
 const databaseSsl = process.env.DB_SSL === "true";
-const databaseRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false";
+const databaseRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED === "true";
 
 if (process.env.CLOUD_DATABASE_REQUIRED === "true" && !databaseUrl) {
   throw new Error("DATABASE_URL es obligatoria cuando se ejecuta con la base compartida.");
 }
 
+const buildCloudDatabaseConfig = (
+  url: string,
+  ssl: boolean,
+  rejectUnauthorized: boolean,
+  max: number
+): PoolConfig => {
+  try {
+    const parsed = new URL(url);
+    const hasSsl = ssl || parsed.searchParams.has("sslmode") || parsed.searchParams.has("ssl");
+    parsed.searchParams.delete("sslmode");
+    parsed.searchParams.delete("ssl");
+    return {
+      connectionString: parsed.toString(),
+      ssl: hasSsl ? { rejectUnauthorized } : undefined,
+      max
+    };
+  } catch {
+    return {
+      connectionString: url,
+      ssl: ssl ? { rejectUnauthorized } : undefined,
+      max
+    };
+  }
+};
+
 const database: PoolConfig = databaseUrl
-  ? {
-      connectionString: databaseUrl,
-      ssl: databaseSsl ? { rejectUnauthorized: databaseRejectUnauthorized } : undefined,
-      max: asNumber(process.env.DB_POOL_MAX, 10)
-    }
+  ? buildCloudDatabaseConfig(
+      databaseUrl,
+      databaseSsl,
+      databaseRejectUnauthorized,
+      asNumber(process.env.DB_POOL_MAX, 10)
+    )
   : {
       host: process.env.DB_HOST ?? "postgres",
       port: asNumber(process.env.DB_PORT, 5432),
