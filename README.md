@@ -6,7 +6,8 @@ Sistema web para centralizar y administrar clientes, órdenes de trabajo, trabaj
 
 - **Frontend:** React, Next.js, TypeScript y Tailwind CSS.
 - **Backend:** Node.js, Express y TypeScript.
-- **Base de datos:** PostgreSQL.
+- **Base de datos:** PostgreSQL compartido en Supabase.
+- **Configuración compartida:** [docs/migracion-supabase.md](docs/migracion-supabase.md).
 - **Autenticación prevista:** Supabase Auth.
 - **Pruebas:** Vitest, React Testing Library y Supertest.
 - **Infraestructura local:** Docker y Docker Compose.

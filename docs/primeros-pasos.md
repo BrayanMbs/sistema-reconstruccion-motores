@@ -2,6 +2,8 @@
 
 Esta guía deja listo el sistema en una máquina nueva y explica el flujo inicial de uso.
 
+> **Importante:** el modo normal usa PostgreSQL compartido en Supabase. Siga primero [migracion-supabase.md](migracion-supabase.md) para configurar `DATABASE_URL`, importar los datos y vincular los perfiles de los usuarios. Los valores `POSTGRES_*` de esta guia solo aplican al modo local aislado.
+
 ## 1. Requisitos
 
 - Docker Desktop con Docker Compose.
