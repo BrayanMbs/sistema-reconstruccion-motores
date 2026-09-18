@@ -45,7 +45,7 @@ Supabase Auth será el proveedor de autenticación. La base incluye el punto de 
 
 El backend autentica tokens con Supabase Auth y luego consulta `app_users` en PostgreSQL. El middleware común exige sesión y usuario activo; cada área restringe sus rutas por rol. `/api/admin` requiere `ADMIN`, mientras que `/api/operativo` requiere `OPERATOR` y además verifica que la orden consultada o modificada pertenezca al trabajador autenticado. Las operaciones relevantes crean eventos de auditoría; el flujo operativo además conserva historial y notificaciones propios.
 
-Las migraciones `001_issue_1_admin.sql`, `002_admin_operations.sql` y `003_operational_workflow.sql` definen los datos administrativos y operativos. Docker las ejecuta al inicializar un volumen nuevo de PostgreSQL.
+Las migraciones `001_issue_1_admin.sql`, `002_admin_operations.sql`, `003_operational_workflow.sql`, `004_seed_admin.sql`, `005_public_order_tracking.sql` y `006_administrative_workflow.sql` definen los datos administrativos, operativos y de seguimiento público. Docker las ejecuta en ese orden al inicializar un volumen nuevo de PostgreSQL.
 
 ## Docker Compose
 
