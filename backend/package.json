@@ -8,7 +8,11 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:cloud": "tsx src/scripts/cloud-database.ts",
+    "db:cloud:user": "tsx src/scripts/provision-cloud-user.ts",
+    "db:cloud:inspect": "tsx src/scripts/inspect-cloud-database.ts",
+    "db:cloud:sync-auth": "tsx src/scripts/sync-cloud-auth-profiles.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.49.8",
