@@ -30,3 +30,18 @@ body {
 .stitch-table th { background: #f2f4f6; color: var(--muted); text-align: left; font-weight: 500; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .stitch-table td { padding: 12px 16px; border-bottom: 1px solid rgb(203 213 225 / 65%); vertical-align: middle; }
 .stitch-table tbody tr:hover { background: #f8fafc; }
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+
+  html, body { background: #fff !important; color: #0f172a !important; }
+  body > div > header, body > div > footer { display: none !important; }
+  .public-tracking-print { max-width: none !important; padding: 0 !important; }
+  .public-tracking-print > section { border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+  .public-tracking-print > div:last-child { display: none !important; }
+  .public-tracking-print aside section:nth-child(n + 2) { display: none !important; }
+  .public-tracking-print section, .public-tracking-print li, .public-tracking-print aside { break-inside: avoid-page; page-break-inside: avoid; }
+  .public-tracking-print .lg\:grid-cols-\[1fr_340px\] { grid-template-columns: minmax(0, 1fr) 52mm !important; gap: 5mm !important; margin-top: 5mm !important; }
+  .public-tracking-print .shadow-sm { box-shadow: none !important; }
+  .public-tracking-print button, .public-tracking-print a { display: none !important; }
+}

@@ -53,6 +53,10 @@ Reportes ──> consolida órdenes, inventario, asignaciones y pagos
 
 La especificación completa de rutas está en [api.md](api.md).
 
+## Portal publico de seguimiento
+
+La migracion `005_public_order_tracking.sql` genera un codigo aleatorio por orden para habilitar consultas sin sesion. El cliente debe recibir el numero de orden y ese codigo en su comprobante. La ruta publica es `/seguimiento` y usa `POST /api/public/orders/tracking`; la respuesta excluye datos internos.
+
 ## Estructura relevante
 
 - `backend/database/migrations/`: estructura y cambios de PostgreSQL.

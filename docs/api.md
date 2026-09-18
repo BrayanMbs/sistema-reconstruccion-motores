@@ -12,6 +12,12 @@ No requiere parámetros ni sesión. Responde `200`:
 { "status": "UP", "service": "sistema-reconstruccion-motores" }
 ```
 
+## Portal publico de seguimiento
+
+- `POST /api/public/orders/tracking`: no requiere sesion. Recibe `orderNumber` y `trackingCode`; devuelve solo estado, avance, servicio, resumen del motor, fechas y nota publica autorizada.
+- Se utiliza `POST` para que el codigo de seguimiento no quede expuesto en la URL, historial del navegador o registros de proxies.
+- Una orden inexistente y un codigo incorrecto devuelven el mismo `404` generico. El endpoint admite un maximo de 10 consultas por IP cada 15 minutos.
+
 ## Auth
 
 - `POST /api/auth/login`: valida email y contraseña mediante Supabase Auth; rechaza perfiles inactivos o roles no administrativos.
