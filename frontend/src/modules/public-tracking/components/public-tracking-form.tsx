@@ -1,0 +1,19 @@
+"use client";
+
+import type { FormEvent } from "react";
+import { Icon } from "@/shared/components/icon";
+import type { PublicTrackingQuery } from "../models/public-tracking";
+
+type Props = { values: PublicTrackingQuery; error: string; loading: boolean; onChange: (field: keyof PublicTrackingQuery, value: string) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onClear: () => void };
+
+export function PublicTrackingForm({ values, error, loading, onChange, onSubmit, onClear }: Props) {
+  return <form noValidate onSubmit={onSubmit} className="rounded-xl border border-[#cbd5e1] bg-white p-7 shadow-sm sm:p-10">
+    <div className="mb-8 text-center"><div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 text-[#2563eb]"><Icon name="search" className="size-7" /></div><h1 className="text-2xl font-bold tracking-tight">Consulta el estado de tu reparación</h1><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#475569]">Ingresa los datos de tu comprobante para conocer el avance de tu orden.</p></div>
+    {error && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-left"><p className="font-semibold text-red-800">No fue posible realizar la consulta</p><p className="mt-1 text-sm text-red-700">{error}</p></div>}
+    <div className="space-y-6"><label className="block"><span className="mb-2 block text-xs font-semibold uppercase tracking-wider">Número de orden <span className="text-red-600">*</span></span><div className="relative"><Icon name="tag" className="absolute left-3.5 top-3 text-[#475569]" /><input required maxLength={13} aria-describedby="order-help" className="h-12 w-full rounded-lg border border-[#cbd5e1] bg-[#f8fafc] pl-11 pr-4 text-sm font-medium outline-none transition focus:border-transparent focus:bg-white focus:ring-2 focus:ring-[#2563eb]" placeholder="Ej. OT-2026-00001" value={values.orderNumber} onChange={(event) => onChange("orderNumber", event.target.value)} /></div><span id="order-help" className="mt-1.5 block text-xs text-[#475569]">Puedes encontrarlo en el comprobante entregado por la empresa.</span></label>
+      <label className="block"><span className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider">Código de seguimiento <span className="text-[11px] normal-case font-medium text-[#475569]">Sensible a mayúsculas</span></span><div className="relative"><Icon name="key" className="absolute left-3.5 top-3 text-[#475569]" /><input required type="password" maxLength={28} autoComplete="off" aria-describedby="tracking-help" className="h-12 w-full rounded-lg border border-[#cbd5e1] bg-[#f8fafc] pl-11 pr-4 font-mono text-sm font-semibold tracking-wider outline-none transition focus:border-transparent focus:bg-white focus:ring-2 focus:ring-[#2563eb]" placeholder="MTR-XXXXXXXXXXXXXXXXXXXXXXXX" value={values.trackingCode} onChange={(event) => onChange("trackingCode", event.target.value)} /></div><span id="tracking-help" className="mt-1.5 block text-xs text-[#475569]">Respeta letras, números y guiones exactamente como aparecen en tu comprobante.</span></label>
+      <button disabled={loading} className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"><Icon name={loading ? "refresh" : "search"} className={loading ? "animate-spin" : ""} />{loading ? "Consultando..." : "Consultar orden"}</button>
+      <div className="flex items-center justify-between gap-3"><button type="button" onClick={onClear} className="text-xs font-semibold text-[#475569] hover:text-[#0f172a]">Limpiar campos</button><span className="flex items-center gap-1 text-xs text-[#16a34a]"><Icon name="shield" className="size-4" />Consulta segura</span></div>
+    </div>
+  </form>;
+}

@@ -1,11 +1,12 @@
 import type { SVGProps } from "react";
 
-const iconNames = ["add", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "logout", "payments", "person_add", "person_check", "person_off", "post_add", "search", "settings", "visibility"] as const;
+const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility"] as const;
 
 export type IconName = (typeof iconNames)[number];
 
 const paths: Record<IconName, string> = {
   add: "M12 5v14M5 12h14",
+  arrow_left: "M19 12H5M11 18l-6-6 6-6",
   assessment: "M5 20V10M12 20V4M19 20v-7M3 20h18",
   close: "M6 6l12 12M18 6L6 18",
   dashboard: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z",
@@ -17,14 +18,19 @@ const paths: Record<IconName, string> = {
   history: "M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6M12 7v5l3.5 2",
   history_edu: "M5 4h10l4 4v12H5zM15 4v4h4M8 13h8M8 17h5",
   inventory: "M4 7h16v13H4zM3 4h18v3H3zM8 11h8M8 15h5",
+  key: "M15 7a4 4 0 1 0-3.8 5.2L4 19.4V21h2v-1.6h1.6v-1.6h1.6l.8-.8A4 4 0 0 0 15 7zM15 9.5h.01",
   logout: "M10 5H5v14h5M14 8l4 4-4 4M9 12h9",
   payments: "M4 6h16v12H4zM4 10h16M8 15h3",
   person_add: "M15 19v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 17.5V19M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 7v6M16 10h6",
   person_check: "M15 19v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 17.5V19M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 14l2 2 3-4",
   person_off: "M3 3l18 18M15.5 18.8a4.5 4.5 0 0 0-4-5.8h-3a4.5 4.5 0 0 0-4.4 3.8M9 9a3 3 0 0 1-2.1-5.1M13.2 9.2A3 3 0 0 0 10.8 4",
+  phone: "M7 3h3l1 5-2 1.5a14 14 0 0 0 5.5 5.5L16 13l5 1v3c0 1.1-.9 2-2 2C10.2 19 5 13.8 5 5c0-1.1.9-2 2-2z",
   post_add: "M5 4h10l4 4v12H5zM15 4v4h4M8 13h6M11 10v6M8 13h6",
+  refresh: "M20 11a8 8 0 1 0 1 4.2M20 4v7h-7",
   search: "m20 20-4.35-4.35M10.8 17a6.2 6.2 0 1 1 0-12.4 6.2 6.2 0 0 1 0 12.4z",
   settings: "M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5zM19.4 13.5a7.7 7.7 0 0 0 .1-1.5 7.7 7.7 0 0 0-.1-1.5l2-1.55-2-3.46-2.35.95a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.35 2.94a7.8 7.8 0 0 0-2.6 1.5L4.8 5.49l-2 3.46 2 1.55A7.7 7.7 0 0 0 4.7 12c0 .51.04 1.01.1 1.5l-2 1.55 2 3.46 2.35-.95a7.8 7.8 0 0 0 2.6 1.5L10.1 22h4l.35-2.94a7.8 7.8 0 0 0 2.6-1.5l2.35.95 2-3.46-2-1.55z",
+  shield: "M12 3 5 6v5c0 4.6 3 8.7 7 10 4-1.3 7-5.4 7-10V6l-7-3zM9 12l2 2 4-4",
+  tag: "M4 4h7l9 9-7 7-9-9V4zM8 8h.01",
   visibility: "M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
 };
 

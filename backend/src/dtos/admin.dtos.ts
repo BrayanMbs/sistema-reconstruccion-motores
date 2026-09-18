@@ -1,4 +1,4 @@
-import type { Role, WorkOrderPriority, WorkOrderStatus } from "../models/domain";
+import type { PublicTrackingMilestone, Role, WorkOrderPriority, WorkOrderStatus } from "../models/domain";
 
 export type CreateUserDto = { fullName: string; email: string; password: string; role: Role };
 export type UpdateUserDto = { fullName?: string; role?: Role };
@@ -20,3 +20,17 @@ export type CreateWorkOrderDto = {
 };
 
 export type UpdateOperationalProgressDto = { progress: number; observation: string };
+
+export type PublicOrderTrackingQueryDto = { orderNumber: string; trackingCode: string };
+export type PublicOrderTrackingDto = {
+  orderNumber: string;
+  status: WorkOrderStatus;
+  progress: number;
+  serviceDescription: string | null;
+  serviceType: string;
+  engineSummary: string;
+  receivedAt: string;
+  estimatedDate: string | null;
+  lastUpdatedAt: string;
+  timeline: PublicTrackingMilestone[];
+};

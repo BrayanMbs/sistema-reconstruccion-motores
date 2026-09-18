@@ -4,7 +4,7 @@ import type { CreateWorkOrderDto } from "../dtos/admin.dtos";
 import type { WorkOrder } from "../models/domain";
 
 const mapOrder = (row: QueryResultRow): WorkOrder => ({
-  id: row.id, code: row.code, clientId: row.client_id, clientName: row.client_name,
+  id: row.id, code: row.code, trackingCode: row.tracking_code, clientId: row.client_id, clientName: row.client_name,
   engineBrand: row.engine_brand, engineModel: row.engine_model, engineSerial: row.engine_serial,
   serviceType: row.service_type, description: row.description, status: row.status,
   progress: row.progress, assignedWorkerId: row.assigned_worker_id, assignedWorker: row.assigned_worker_name ?? row.assigned_worker, estimatedDate: row.estimated_date,

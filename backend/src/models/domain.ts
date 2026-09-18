@@ -28,6 +28,7 @@ export type WorkOrderPriority = "NORMAL" | "HIGH" | "URGENT";
 export type WorkOrder = {
   id: string;
   code: string;
+  trackingCode: string;
   clientId: string;
   clientName: string;
   engineBrand: string;
@@ -46,6 +47,29 @@ export type WorkOrder = {
   priority: WorkOrderPriority;
   startedAt: string | null;
   completedAt: string | null;
+};
+
+/** Safe milestone shown by the unauthenticated client portal. */
+export type PublicTrackingMilestone = {
+  type: "ORDER_RECEIVED" | "WORK_STARTED" | "PROGRESS_UPDATED" | "WORK_COMPLETED";
+  title: string;
+  message: string;
+  progress: number | null;
+  occurredAt: string;
+};
+
+/** Minimal representation returned by the unauthenticated client portal. */
+export type PublicOrderTracking = {
+  orderNumber: string;
+  status: WorkOrderStatus;
+  progress: number;
+  serviceDescription: string | null;
+  serviceType: string;
+  engineSummary: string;
+  receivedAt: string;
+  estimatedDate: string | null;
+  lastUpdatedAt: string;
+  timeline: PublicTrackingMilestone[];
 };
 
 export type WorkOrderEvent = { id: string; workOrderId: string; actorName: string | null; eventType: string; message: string; progress: number | null; createdAt: string };
