@@ -3,6 +3,7 @@ import { adminRouter } from "./admin.routes";
 import { authRouter } from "./auth.routes";
 import { healthRouter } from "./health.routes";
 import { operationalRouter } from "./operational.routes";
+import { administrativeRouter } from "./administrative.routes";
 import { publicRouter } from "./public.routes";
 
 export const apiRouter = Router();
@@ -10,5 +11,6 @@ export const apiRouter = Router();
 apiRouter.use(healthRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/administrativo", administrativeRouter);
 apiRouter.use("/operativo", operationalRouter);
 apiRouter.use("/public", publicRouter);

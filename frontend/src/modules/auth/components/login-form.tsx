@@ -24,7 +24,7 @@ export function LoginForm() {
     if (!supabase) { setError("Supabase Auth no está configurado en este entorno."); return; }
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8080"}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
       const result = await response.json() as LoginResponse & { message?: string };
       if (!response.ok) throw new ApiError(result.message ?? "No fue posible iniciar sesión", response.status);
       const { error: sessionError } = await supabase.auth.setSession({ access_token: result.session.accessToken, refresh_token: result.session.refreshToken });

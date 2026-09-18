@@ -1,0 +1,2 @@
+import { AdministrativeOrderDetail } from "@/modules/work-orders/components/administrative-work-orders";
+export default async function AdministrativeOrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ asignar?: string }> }) { const [{ id }, query] = await Promise.all([params, searchParams]); return <AdministrativeOrderDetail id={id} assignInitially={query.asignar === "1"} />; }

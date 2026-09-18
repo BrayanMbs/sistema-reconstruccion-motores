@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility"] as const;
+const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "menu", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility"] as const;
 
 export type IconName = (typeof iconNames)[number];
 
@@ -20,6 +20,7 @@ const paths: Record<IconName, string> = {
   inventory: "M4 7h16v13H4zM3 4h18v3H3zM8 11h8M8 15h5",
   key: "M15 7a4 4 0 1 0-3.8 5.2L4 19.4V21h2v-1.6h1.6v-1.6h1.6l.8-.8A4 4 0 0 0 15 7zM15 9.5h.01",
   logout: "M10 5H5v14h5M14 8l4 4-4 4M9 12h9",
+  menu: "M4 6h16M4 12h16M4 18h16",
   payments: "M4 6h16v12H4zM4 10h16M8 15h3",
   person_add: "M15 19v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 17.5V19M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 7v6M16 10h6",
   person_check: "M15 19v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 3 17.5V19M9 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 14l2 2 3-4",

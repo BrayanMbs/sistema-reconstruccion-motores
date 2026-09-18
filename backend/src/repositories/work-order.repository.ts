@@ -1,6 +1,6 @@
 import type { QueryResultRow } from "pg";
 import { databasePool } from "../config/database";
-import type { CreateWorkOrderDto } from "../dtos/admin.dtos";
+import type { CreateWorkOrderDto, UpdateWorkOrderDto } from "../dtos/admin.dtos";
 import type { WorkOrder } from "../models/domain";
 
 const mapOrder = (row: QueryResultRow): WorkOrder => ({
@@ -52,6 +52,21 @@ export class WorkOrderRepository {
     return result.rowCount ? this.findById(result.rows[0].id) : null;
   }
 
+  async update(id: string, input: UpdateWorkOrderDto): Promise<WorkOrder | null> {
+    const result = await databasePool.query(
+      `UPDATE work_orders SET engine_brand = $2, engine_model = $3, engine_serial = $4,
+       service_type = $5, description = $6, estimated_date = $7, intake_notes = $8,
+       public_note = $9, priority = $10, updated_at = now() WHERE id = $1 RETURNING id`,
+      [id, input.engineBrand, input.engineModel, input.engineSerial ?? null, input.serviceType, input.description, input.estimatedDate ?? null, input.intakeNotes ?? null, input.publicNote ?? null, input.priority ?? "NORMAL"]
+    );
+    return result.rowCount ? this.findById(result.rows[0].id) : null;
+  }
+
+  async listByClient(clientId: string) {
+    const result = await databasePool.query(`${selectSql} WHERE o.client_id = $1 ORDER BY o.created_at DESC`, [clientId]);
+    return result.rows.map(mapOrder);
+  }
+
   async workerWorkload(workerId: string): Promise<number> { const result = await databasePool.query("SELECT count(*)::int AS count FROM work_orders WHERE assigned_worker_id = $1 AND status IN ('PENDING','IN_PROGRESS')", [workerId]); return result.rows[0].count; }
 
   async dashboardCounts() {
@@ -59,9 +74,18 @@ export class WorkOrderRepository {
       `SELECT count(*)::int AS total,
         count(*) FILTER (WHERE status = 'PENDING')::int AS pending,
         count(*) FILTER (WHERE status = 'IN_PROGRESS')::int AS in_progress,
-        count(*) FILTER (WHERE status = 'COMPLETED')::int AS completed
+        count(*) FILTER (WHERE status = 'COMPLETED')::int AS completed,
+        count(*) FILTER (WHERE assigned_worker_id IS NULL AND status IN ('PENDING','IN_PROGRESS'))::int AS unassigned
        FROM work_orders`
     );
-    return result.rows[0] as { total: number; pending: number; in_progress: number; completed: number };
+    return result.rows[0] as { total: number; pending: number; in_progress: number; completed: number; unassigned: number };
+  }
+
+  async upcoming(limit = 5): Promise<WorkOrder[]> {
+    const result = await databasePool.query(
+      `${selectSql} WHERE o.estimated_date >= CURRENT_DATE AND o.status IN ('PENDING','IN_PROGRESS') ORDER BY o.estimated_date ASC LIMIT $1`,
+      [limit]
+    );
+    return result.rows.map(mapOrder);
   }
 }
