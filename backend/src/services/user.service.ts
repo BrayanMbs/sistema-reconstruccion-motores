@@ -17,52 +17,26 @@ export class UserService {
 
     const supabase = createSupabaseAdminClient();
     if (!supabase) throw new AppError("La administración de Supabase no está configurada", 503, "AUTH_ADMIN_NOT_CONFIGURED");
+    const created = await supabase.auth.admin.createUser({ email: input.email, password: input.password, email_confirm: true });
+    let authUser = created.data.user;
+    let createdAuthUser = Boolean(authUser);
 
-    let userId: string;
-    let isNewAuthUser = false;
-
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: input.email,
-      password: input.password,
-      email_confirm: true
-    });
-
-    if (error) {
-      if (error.message.toLowerCase().includes("already been registered") || error.message.toLowerCase().includes("already registered")) {
-        const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
-        if (listError) throw new AppError(listError.message, 500, "AUTH_LIST_FAILED");
-        const found = listData.users.find((u) => u.email?.toLowerCase() === input.email.toLowerCase());
-        if (!found) {
-          throw new AppError(error.message, 409, "AUTH_USER_CONFLICT");
-        }
-        await supabase.auth.admin.updateUserById(found.id, { password: input.password });
-        userId = found.id;
-      } else {
-        throw new AppError(error.message, 409, "AUTH_USER_CREATE_FAILED");
+    if (created.error && /already (been )?registered/i.test(created.error.message)) {
+      const existingAuth = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (existingAuth.error) throw new AppError(existingAuth.error.message, 500, "AUTH_LIST_FAILED");
+      authUser = existingAuth.data.users.find((user) => user.email?.toLowerCase() === input.email.toLowerCase()) ?? null;
+      createdAuthUser = false;
+      if (authUser) {
+        const updated = await supabase.auth.admin.updateUserById(authUser.id, { password: input.password, email_confirm: true });
+        if (updated.error) throw new AppError(updated.error.message, 409, "AUTH_USER_UPDATE_FAILED");
       }
-    } else if (data.user) {
-      userId = data.user.id;
-      isNewAuthUser = true;
-    } else {
-      throw new AppError("No se pudo crear la cuenta de acceso", 409, "AUTH_USER_CREATE_FAILED");
     }
 
-    try {
-      const user = await this.users.create({
-        id: userId,
-        fullName: input.fullName,
-        email: input.email,
-        role: input.role,
-        isActive: true
-      });
-      await this.audit.record(actorId, "USER_CREATED", "USER", user.id, { role: user.role });
-      return user;
-    } catch (createError) {
-      if (isNewAuthUser) {
-        await supabase.auth.admin.deleteUser(userId);
-      }
-      throw createError;
-    }
+    if (created.error && !authUser) throw new AppError(created.error.message, 409, "AUTH_USER_CREATE_FAILED");
+    if (!authUser) throw new AppError("No se pudo crear la cuenta de acceso", 409, "AUTH_USER_CREATE_FAILED");
+
+    try { const user = await this.users.create({ id: authUser.id, fullName: input.fullName, email: input.email, role: input.role, isActive: true }); await this.audit.record(actorId, "USER_CREATED", "USER", user.id, { role: user.role }); return user; }
+    catch (error) { if (createdAuthUser) await supabase.auth.admin.deleteUser(authUser.id); throw error; }
   }
   async update(id: string, updates: UpdateUserDto, actorId: string) { const user = await this.users.update(id, updates); if (!user) throw new AppError("Usuario no encontrado", 404, "USER_NOT_FOUND"); await this.audit.record(actorId, "USER_UPDATED", "USER", id, updates); return user; }
   async updateRole(id: string, role: Role, actorId: string) { const user = await this.users.update(id, { role }); if (!user) throw new AppError("Usuario no encontrado", 404, "USER_NOT_FOUND"); await this.audit.record(actorId, "USER_ROLE_CHANGED", "USER", id, { role }); return user; }

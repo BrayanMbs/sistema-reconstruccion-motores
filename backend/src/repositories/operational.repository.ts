@@ -27,6 +27,7 @@ export class OperationalRepository {
     const upcoming = await this.listOrders(workerId, { page: 1, limit: 5 }); return { ...counts.rows[0], upcoming: upcoming.items };
   }
   async events(workerId: string, orderId?: string) { const result = await databasePool.query(`SELECT e.*, actor.full_name AS actor_name FROM work_order_events e LEFT JOIN app_users actor ON actor.id = e.actor_id WHERE e.subject_worker_id = $1 ${orderId ? "AND e.work_order_id = $2" : ""} ORDER BY e.created_at DESC`, orderId ? [workerId, orderId] : [workerId]); return result.rows.map(mapEvent); }
+  async eventsForOrder(orderId: string) { const result = await databasePool.query("SELECT e.*, actor.full_name AS actor_name FROM work_order_events e LEFT JOIN app_users actor ON actor.id = e.actor_id WHERE e.work_order_id = $1 ORDER BY e.created_at DESC", [orderId]); return result.rows.map(mapEvent); }
   async start(workerId: string, orderId: string) { return this.change(workerId, orderId, "START"); }
   async progress(workerId: string, orderId: string, progress: number, observation: string) { return this.change(workerId, orderId, "PROGRESS", progress, observation); }
   async complete(workerId: string, orderId: string, observation: string) { return this.change(workerId, orderId, "COMPLETE", 100, observation); }

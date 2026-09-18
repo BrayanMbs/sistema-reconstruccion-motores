@@ -4,11 +4,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Icon } from "@/shared/components/icon";
 import type { Client, Paginated } from "@/shared/models/admin";
 import { apiRequest } from "@/shared/services/api";
+import Link from "next/link";
 
 type ClientForm = { fullName: string; identificationType: "DPI" | "NIT" | "PASSPORT"; identification: string; phone: string; email: string; address: string };
 const emptyForm: ClientForm = { fullName: "", identificationType: "DPI", identification: "", phone: "", email: "", address: "" };
 
-export function ClientsView() {
+export function ClientsView({ apiBase = "/api/admin", detailBase }: { apiBase?: string; detailBase?: string }) {
   const [data, setData] = useState<Paginated<Client> | null>(null);
   const [search, setSearch] = useState("");
   const [identificationType, setIdentificationType] = useState("");
@@ -24,14 +25,14 @@ export function ClientsView() {
       const query = new URLSearchParams({ limit: "20" });
       if (search) query.set("search", search);
       if (identificationType) query.set("identificationType", identificationType);
-      setData(await apiRequest<Paginated<Client>>(`/api/admin/clients?${query}`));
+      setData(await apiRequest<Paginated<Client>>(`${apiBase}/clients?${query}`));
     } catch (caught) { setError((caught as Error).message); }
-  }, [search, identificationType]);
+  }, [apiBase, search, identificationType]);
 
   useEffect(() => { void load(); }, [load]);
 
   const detail = async (id: string) => {
-    try { const result = await apiRequest<{ client: Client }>(`/api/admin/clients/${id}`); setSelected(result.client); }
+    try { const result = await apiRequest<{ client: Client }>(`${apiBase}/clients/${id}`); setSelected(result.client); }
     catch (caught) { setError((caught as Error).message); }
   };
 
@@ -40,7 +41,7 @@ export function ClientsView() {
     setSaving(true);
     setFormError("");
     try {
-      await apiRequest("/api/admin/clients", { method: "POST", body: JSON.stringify(form) });
+      await apiRequest(`${apiBase}/clients`, { method: "POST", body: JSON.stringify(form) });
       setShowForm(false);
       setForm(emptyForm);
       await load();
@@ -53,8 +54,8 @@ export function ClientsView() {
   return <div className="mx-auto max-w-[1440px]">
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-[28px] font-bold">Lista de clientes</h2><p className="mt-1 text-slate-600">Consulte y registre los clientes del sistema.</p></div><button className="stitch-button stitch-button-primary" onClick={openForm}><Icon name="person_add" />Nuevo cliente</button></div>
     {error && <p role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    <section className="stitch-card mb-6 p-4"><div className="grid gap-4 md:grid-cols-[1fr_220px_auto] md:items-end"><label className="text-sm text-slate-600"><span className="mb-2 block">Buscar cliente</span><div className="relative"><Icon name="search" className="absolute left-3 top-2.5 text-slate-500" /><input className="stitch-input pl-10" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nombre, identificación o teléfono" /></div></label><label className="text-sm text-slate-600"><span className="mb-2 block">Tipo de identificación</span><select className="stitch-input" value={identificationType} onChange={(event) => setIdentificationType(event.target.value)}><option value="">Todos</option><option value="DPI">DPI</option><option value="NIT">NIT</option><option value="PASSPORT">Pasaporte</option></select></label><button type="button" className="stitch-button stitch-button-secondary" onClick={() => { setSearch(""); setIdentificationType(""); }}><Icon name="filter" />Limpiar</button></div></section>
-    <section className="stitch-card overflow-hidden"><div className="overflow-x-auto"><table className="stitch-table"><thead><tr><th>Nombre</th><th>Identificación</th><th>Teléfono</th><th>Correo electrónico</th><th>Fecha de registro</th><th className="text-right">Acciones</th></tr></thead><tbody>{data?.items.map((client) => <tr key={client.id}><td className="font-medium">{client.fullName}</td><td>{client.identificationType}: {client.identification}</td><td className="text-slate-600">{client.phone ?? "—"}</td><td className="text-slate-600">{client.email ?? "—"}</td><td className="text-slate-600">{formatDate(client.createdAt)}</td><td className="text-right"><button aria-label={`Ver ${client.fullName}`} onClick={() => void detail(client.id)} className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-700"><Icon name="visibility" /></button></td></tr>)}{data && !data.items.length && <tr><td colSpan={6} className="p-10 text-center text-slate-500">No hay clientes que coincidan con los filtros.</td></tr>}</tbody></table></div><div className="border-t border-slate-300 px-4 py-3 text-sm text-slate-600">Mostrando {data?.items.length ?? 0} de {data?.total ?? 0} clientes</div></section>
+    <section className="stitch-card mb-6 p-4"><div className="grid gap-4 md:grid-cols-[1fr_220px_auto] md:items-end"><label className="text-sm text-slate-600"><span className="mb-2 block">Buscar cliente</span><div className="relative"><Icon name="search" className="absolute left-3 top-2.5 text-slate-500" /><input className="stitch-input stitch-input-with-icon" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nombre, identificación, teléfono o correo" /></div></label><label className="text-sm text-slate-600"><span className="mb-2 block">Tipo de identificación</span><select className="stitch-input" value={identificationType} onChange={(event) => setIdentificationType(event.target.value)}><option value="">Todos</option><option value="DPI">DPI</option><option value="NIT">NIT</option><option value="PASSPORT">Pasaporte</option></select></label><button type="button" className="stitch-button stitch-button-secondary" onClick={() => { setSearch(""); setIdentificationType(""); }}><Icon name="filter" />Limpiar</button></div></section>
+    <section className="stitch-card overflow-hidden"><div className="overflow-x-auto"><table className="stitch-table"><thead><tr><th>Nombre</th><th>Identificación</th><th>Teléfono</th><th>Correo electrónico</th><th>Fecha de registro</th><th className="text-right">Acciones</th></tr></thead><tbody>{data?.items.map((client) => <tr key={client.id}><td className="font-medium">{client.fullName}</td><td>{client.identificationType}: {client.identification}</td><td className="text-slate-600">{client.phone ?? "—"}</td><td className="text-slate-600">{client.email ?? "—"}</td><td className="text-slate-600">{formatDate(client.createdAt)}</td><td className="text-right">{detailBase ? <Link aria-label={`Ver ${client.fullName}`} href={`${detailBase}/${client.id}`} className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-700"><Icon name="visibility" /></Link> : <button aria-label={`Ver ${client.fullName}`} onClick={() => void detail(client.id)} className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-blue-700"><Icon name="visibility" /></button>}</td></tr>)}{data && !data.items.length && <tr><td colSpan={6} className="p-10 text-center text-slate-500">No hay clientes que coincidan con los filtros.</td></tr>}</tbody></table></div><div className="border-t border-slate-300 px-4 py-3 text-sm text-slate-600">Mostrando {data?.items.length ?? 0} de {data?.total ?? 0} clientes</div></section>
     {showForm && <ClientDialog form={form} formError={formError} saving={saving} onClose={() => setShowForm(false)} onSubmit={createClient} setForm={setForm} />}
     {selected && <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/40 p-4"><article className="stitch-card w-full max-w-lg p-6"><div className="flex justify-between"><div><h3 className="text-xl font-bold">Detalle de cliente</h3><p className="text-sm text-slate-500">Información registrada</p></div><button aria-label="Cerrar" onClick={() => setSelected(null)} className="text-slate-500"><Icon name="close" /></button></div><dl className="mt-5 grid grid-cols-2 gap-4 text-sm"><Detail label="Nombre" value={selected.fullName} /><Detail label="Identificación" value={`${selected.identificationType}: ${selected.identification}`} /><Detail label="Teléfono" value={selected.phone ?? "No registrado"} /><Detail label="Correo" value={selected.email ?? "No registrado"} /><Detail label="Dirección" value={selected.address ?? "No registrada"} /></dl></article></div>}
   </div>;

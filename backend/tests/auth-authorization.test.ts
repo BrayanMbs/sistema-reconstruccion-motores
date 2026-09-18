@@ -28,4 +28,10 @@ describe("AuthService authorization", () => {
     mocks.findById.mockResolvedValue(user({ role: "OPERATOR" }));
     await expect(new AuthService().signIn("operator@example.com", "secure-password")).resolves.toMatchObject({ user: { role: "OPERATOR" } });
   });
+
+  it("allows an active administrative user to sign in", async () => {
+    mocks.signInWithPassword.mockResolvedValue({ data: { user: { id: user().id }, session: { access_token: "access", refresh_token: "refresh", expires_at: 1 } }, error: null });
+    mocks.findById.mockResolvedValue(user({ role: "ADMINISTRATIVE" }));
+    await expect(new AuthService().signIn("administrative@example.com", "secure-password")).resolves.toMatchObject({ user: { role: "ADMINISTRATIVE" } });
+  });
 });

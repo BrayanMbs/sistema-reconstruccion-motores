@@ -1,3 +1,10 @@
 import type { Role } from "@/shared/models/admin";
 
-export const roleHome = (role: Role) => role === "ADMIN" ? "/admin/dashboard" : role === "OPERATOR" ? "/operativo/inicio" : "/login";
+export const roleHome = (role: Role) =>
+  role === "ADMIN"
+    ? "/admin/dashboard"
+    : role === "ADMINISTRATIVE"
+      ? "/administrativo/dashboard"
+      : role === "OPERATOR"
+        ? "/operativo/inicio"
+        : "/login";

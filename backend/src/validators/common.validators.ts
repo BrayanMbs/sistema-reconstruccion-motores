@@ -15,6 +15,21 @@ export const optionalText = (value: unknown, field: string, maxLength = 1000): s
   return requireText(value, field, maxLength);
 };
 
+export const optionalDate = (value: unknown, field: string): string | null => {
+  const date = optionalText(value, field, 10);
+  if (date === null) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) throw new AppError(`${field} debe tener formato YYYY-MM-DD`, 422, "VALIDATION_ERROR");
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) {
+    throw new AppError(`${field} no es una fecha válida`, 422, "VALIDATION_ERROR");
+  }
+  return date;
+};
+
 export const requireEmail = (value: unknown): string => {
   const email = requireText(value, "Correo", 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
