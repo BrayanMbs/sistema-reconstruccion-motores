@@ -6,6 +6,6 @@ describe("roleHome", () => {
     expect(roleHome("ADMIN")).toBe("/admin/dashboard");
     expect(roleHome("ADMINISTRATIVE")).toBe("/administrativo/dashboard");
     expect(roleHome("OPERATOR")).toBe("/operativo/inicio");
+    expect(roleHome("CASHIER")).toBe("/caja");
   });
-  it("does not grant unsupported roles an application area", () => { expect(roleHome("CASHIER")).toBe("/login"); });
 });

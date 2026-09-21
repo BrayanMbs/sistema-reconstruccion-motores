@@ -7,6 +7,8 @@ export const roleHome = (role: Role) =>
       ? "/administrativo/dashboard"
       : role === "OPERATOR"
       ? "/operativo/inicio"
-        : role === "INVENTORY"
+      : role === "CASHIER"
+        ? "/caja"
+      : role === "INVENTORY"
           ? "/inventario"
           : "/login";
