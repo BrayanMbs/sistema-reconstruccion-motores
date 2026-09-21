@@ -5,7 +5,7 @@ export type UpdateUserDto = { fullName?: string; role?: Role };
 export type CreateClientDto = { fullName: string; identificationType: "DPI" | "NIT" | "PASSPORT"; identification: string; phone?: string | null; email?: string | null; address?: string | null };
 export type UpdateClientDto = CreateClientDto;
 export type CreateInventoryItemDto = { sku: string; name: string; description?: string | null; unit: string; stockQuantity: number; minimumStock: number };
-export type CreatePaymentDto = { workOrderId: string; amount: number; method: string; reference?: string | null; notes?: string | null };
+export type { CreatePaymentDto, UpdateOrderFinanceDto, OrderFinancialSummaryDto } from "./finance.dtos";
 export type CreateWorkOrderDto = {
   clientId: string;
   engineBrand: string;
