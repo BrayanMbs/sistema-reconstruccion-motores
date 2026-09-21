@@ -47,6 +47,7 @@ export type WorkOrder = {
   priority: WorkOrderPriority;
   startedAt: string | null;
   completedAt: string | null;
+  totalAmount: number | null;
 };
 
 /** Safe milestone shown by the unauthenticated client portal. */
@@ -78,6 +79,16 @@ export type OperatorNotification = { id: string; workOrderId: string | null; wor
 export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; createdAt: string; updatedAt: string };
 export type WorkOrderInventory = { workOrderId: string; inventoryItemId: string; sku: string; name: string; unit: string; quantity: number; assignedAt: string };
 export type Payment = { id: string; workOrderId: string; workOrderCode: string; clientName: string; amount: number; method: string; reference: string | null; notes: string | null; receivedBy: string | null; createdAt: string };
+export type FinancialStatus = "PENDING" | "PARTIAL" | "PAID";
+export type OrderFinancialSummary = {
+  workOrderId: string;
+  workOrderCode: string;
+  clientName: string;
+  totalAmount: number | null;
+  totalPaid: number;
+  balance: number | null;
+  financialStatus: FinancialStatus;
+};
 export type AppSettings = { company: { name: string; phone: string; address: string }; finance: { currency: string; taxRate: number } };
 
 export type AuditEvent = {

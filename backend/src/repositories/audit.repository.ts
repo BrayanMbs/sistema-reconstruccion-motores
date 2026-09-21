@@ -1,11 +1,19 @@
+import type { PoolClient } from "pg";
 import { databasePool } from "../config/database";
 import type { AuditEvent } from "../models/domain";
 
 const mapAudit = (row: Record<string, unknown>): AuditEvent => ({ id: String(row.id), actorName: row.actor_name as string | null, action: String(row.action), entityType: String(row.entity_type), entityId: row.entity_id as string | null, details: (row.details ?? {}) as Record<string, unknown>, createdAt: String(row.created_at) });
 
 export class AuditRepository {
-  async record(input: { actorId?: string; action: string; entityType: string; entityId?: string; details?: Record<string, unknown> }): Promise<void> {
-    await databasePool.query("INSERT INTO audit_events (actor_id, action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4, $5::jsonb)", [input.actorId ?? null, input.action, input.entityType, input.entityId ?? null, JSON.stringify(input.details ?? {})]);
+  async record(
+    input: { actorId?: string; action: string; entityType: string; entityId?: string; details?: Record<string, unknown> },
+    client?: PoolClient
+  ): Promise<void> {
+    const executor = client ?? databasePool;
+    await executor.query(
+      "INSERT INTO audit_events (actor_id, action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4, $5::jsonb)",
+      [input.actorId ?? null, input.action, input.entityType, input.entityId ?? null, JSON.stringify(input.details ?? {})]
+    );
   }
 
   async list(filters: { userId?: string; action?: string; from?: string; to?: string; page: number; limit: number }) {

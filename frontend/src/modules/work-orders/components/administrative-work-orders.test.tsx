@@ -14,7 +14,8 @@ const order = (status: WorkOrderStatus, assigned: boolean): WorkOrder => ({
   status, progress: status === "COMPLETED" ? 100 : 25, assignedWorkerId: assigned ? "operator-1" : null,
   assignedWorker: assigned ? "Operador prueba" : null, estimatedDate: null, createdAt: "2026-01-01T00:00:00.000Z",
   intakeNotes: null, publicNote: null, priority: "NORMAL", startedAt: null,
-  completedAt: status === "COMPLETED" ? "2026-01-02T00:00:00.000Z" : null
+  completedAt: status === "COMPLETED" ? "2026-01-02T00:00:00.000Z" : null,
+  totalAmount: null
 });
 
 const mockDetail = (status: WorkOrderStatus, assigned: boolean) => {

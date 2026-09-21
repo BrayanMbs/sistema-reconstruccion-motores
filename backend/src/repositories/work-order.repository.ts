@@ -8,7 +8,8 @@ const mapOrder = (row: QueryResultRow): WorkOrder => ({
   engineBrand: row.engine_brand, engineModel: row.engine_model, engineSerial: row.engine_serial,
   serviceType: row.service_type, description: row.description, status: row.status,
   progress: row.progress, assignedWorkerId: row.assigned_worker_id, assignedWorker: row.assigned_worker_name ?? row.assigned_worker, estimatedDate: row.estimated_date,
-  createdAt: row.created_at, intakeNotes: row.intake_notes, publicNote: row.public_note, priority: row.priority, startedAt: row.started_at, completedAt: row.completed_at
+  createdAt: row.created_at, intakeNotes: row.intake_notes, publicNote: row.public_note, priority: row.priority, startedAt: row.started_at, completedAt: row.completed_at,
+  totalAmount: row.total_amount !== null && row.total_amount !== undefined ? Number(row.total_amount) : null
 });
 
 const selectSql = `SELECT o.*, c.full_name AS client_name, worker.full_name AS assigned_worker_name FROM work_orders o JOIN clients c ON c.id = o.client_id LEFT JOIN app_users worker ON worker.id = o.assigned_worker_id`;
@@ -58,6 +59,14 @@ export class WorkOrderRepository {
        service_type = $5, description = $6, estimated_date = $7, intake_notes = $8,
        public_note = $9, priority = $10, updated_at = now() WHERE id = $1 RETURNING id`,
       [id, input.engineBrand, input.engineModel, input.engineSerial ?? null, input.serviceType, input.description, input.estimatedDate ?? null, input.intakeNotes ?? null, input.publicNote ?? null, input.priority ?? "NORMAL"]
+    );
+    return result.rowCount ? this.findById(result.rows[0].id) : null;
+  }
+
+  async updateTotalAmount(id: string, totalAmount: number): Promise<WorkOrder | null> {
+    const result = await databasePool.query(
+      `UPDATE work_orders SET total_amount = $2, updated_at = now() WHERE id = $1 RETURNING id`,
+      [id, totalAmount]
     );
     return result.rowCount ? this.findById(result.rows[0].id) : null;
   }
