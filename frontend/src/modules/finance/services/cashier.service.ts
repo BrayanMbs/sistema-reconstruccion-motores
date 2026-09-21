@@ -1,0 +1,6 @@
+import { apiRequest } from "@/shared/services/api";
+import type { CreatePaymentInput } from "../dtos/finance.dto";
+import type { CashierDashboard,CashierOrder,CashierSummary } from "../models/cashier";
+import type { Payment } from "@/shared/models/admin";
+const query=(input:Record<string,string|number|undefined>)=>{const p=new URLSearchParams();Object.entries(input).forEach(([k,v])=>{if(v!==undefined&&v!=="")p.set(k,String(v));});return p.toString()?`?${p}`:"";};
+export const cashierService={dashboard:async()=>(await apiRequest<{dashboard:CashierDashboard}>("/api/cashier/dashboard")).dashboard,orders:(input:{search?:string;financialStatus?:string;page?:number;limit?:number}={})=>apiRequest<{items:CashierOrder[];total:number;page:number;limit:number}>(`/api/cashier/orders${query(input)}`),payments:(input:{search?:string;method?:string;startDate?:string;endDate?:string;page?:number;limit?:number}={})=>apiRequest<{items:Payment[];total:number;page:number;limit:number}>(`/api/cashier/payments${query(input)}`),create:(input:CreatePaymentInput)=>apiRequest<{payment:Payment;summary:CashierOrder}>("/api/cashier/payments",{method:"POST",body:JSON.stringify(input)}),daily:async()=>(await apiRequest<{summary:CashierSummary}>("/api/cashier/daily-summary")).summary};

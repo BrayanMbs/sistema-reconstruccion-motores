@@ -1,0 +1,12 @@
+import type { Request, Response } from "express";
+import { CashierService } from "../services/cashier.service";
+import { requireText } from "../validators/common.validators";
+import { cashierOrderFilters, cashierPaymentFilters } from "../validators/cashier.validators";
+import { validatePaymentInput } from "../validators/finance.validators";
+const service=new CashierService();
+export const cashierDashboard=async(req:Request,res:Response)=>{res.json({dashboard:await service.dashboard(req.appUser!.id)});};
+export const cashierOrders=async(req:Request,res:Response)=>{res.json(await service.orders(cashierOrderFilters(req.query)));};
+export const cashierPayments=async(req:Request,res:Response)=>{res.json(await service.paymentsHistory(cashierPaymentFilters(req.query)));};
+export const cashierPayment=async(req:Request,res:Response)=>{res.json({payment:await service.payment(requireText(req.params.id,"Pago"))});};
+export const cashierCreatePayment=async(req:Request,res:Response)=>{res.status(201).json(await service.recordPayment(validatePaymentInput(req.body),req.appUser!.id));};
+export const cashierDailySummary=async(req:Request,res:Response)=>{res.json({summary:await service.summary(req.appUser!.id)});};
