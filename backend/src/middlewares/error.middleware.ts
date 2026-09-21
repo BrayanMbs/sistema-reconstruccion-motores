@@ -13,7 +13,7 @@ export const errorHandler = (
 ): void => {
   void next;
   if (error instanceof AppError) {
-    response.status(error.statusCode).json({ message: error.message, code: error.code });
+    response.status(error.statusCode).json({ message: error.message, code: error.code, ...(error.details ? error.details : {}) });
     return;
   }
 

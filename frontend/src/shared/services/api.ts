@@ -5,7 +5,7 @@ import { getSupabase } from "./supabase";
 const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8080";
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number, public readonly code?: string) { super(message); }
+  constructor(message: string, public readonly status: number, public readonly code?: string, public readonly details?: Record<string, unknown>) { super(message); }
 }
 
 const getToken = async (): Promise<string | null> => {
@@ -22,7 +22,7 @@ export const apiRequest = async <T>(path: string, options: RequestInit = {}): Pr
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers }
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ApiError(body.message ?? "No fue posible completar la solicitud", response.status, body.code);
+  if (!response.ok) throw new ApiError(body.message ?? "No fue posible completar la solicitud", response.status, body.code, body);
   return body as T;
 };
 

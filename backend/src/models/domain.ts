@@ -76,7 +76,11 @@ export type PublicOrderTracking = {
 export type WorkOrderEvent = { id: string; workOrderId: string; actorName: string | null; eventType: string; message: string; progress: number | null; createdAt: string };
 export type OperatorNotification = { id: string; workOrderId: string | null; workOrderCode: string | null; type: string; message: string; readAt: string | null; createdAt: string };
 
-export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; createdAt: string; updatedAt: string };
+export type InventoryItemType = "PART" | "MATERIAL" | "TOOL" | "CONSUMABLE";
+export type InventoryMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
+export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; type: InventoryItemType; category: string; brand: string | null; partNumber: string | null; compatibility: string | null; location: string | null; referenceUnitCost: number; referenceSupplier: string | null; isActive: boolean; createdAt: string; updatedAt: string; createdBy: string | null; updatedBy: string | null; updatedByName: string | null; lastMovementAt: string | null };
+export type InventoryMovement = { id: string; inventoryItemId: string; itemCode: string; itemName: string; movementType: InventoryMovementType; quantity: number; previousStock: number; resultingStock: number; reason: string; referenceDocument: string | null; supplierReference: string | null; workOrderId: string | null; workOrderCode: string | null; observation: string | null; performedBy: string; performedByName: string | null; createdAt: string };
+export type InventoryDashboard = { productsRegistered: number; totalStock: number; lowStockProducts: number; entriesThisMonth: number; exitsThisMonth: number; recentMovements: InventoryMovement[]; lowStockItems: InventoryItem[]; monthlyFlow: { entries: number; exits: number }; health: "HEALTHY" | "ATTENTION" | "CRITICAL" };
 export type WorkOrderInventory = { workOrderId: string; inventoryItemId: string; sku: string; name: string; unit: string; quantity: number; assignedAt: string };
 export type Payment = { id: string; workOrderId: string; workOrderCode: string; clientName: string; amount: number; method: string; reference: string | null; notes: string | null; receivedBy: string | null; createdAt: string };
 export type FinancialStatus = "PENDING" | "PARTIAL" | "PAID";
