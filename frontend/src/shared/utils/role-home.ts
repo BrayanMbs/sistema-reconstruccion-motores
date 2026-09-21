@@ -6,5 +6,7 @@ export const roleHome = (role: Role) =>
     : role === "ADMINISTRATIVE"
       ? "/administrativo/dashboard"
       : role === "OPERATOR"
-        ? "/operativo/inicio"
-        : "/login";
+      ? "/operativo/inicio"
+        : role === "INVENTORY"
+          ? "/inventario"
+          : "/login";

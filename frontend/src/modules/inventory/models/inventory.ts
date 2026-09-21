@@ -1,0 +1,13 @@
+export type InventoryItemType = "PART" | "MATERIAL" | "TOOL" | "CONSUMABLE";
+export type InventoryMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
+export type InventoryItem = { id: string; sku: string; name: string; description: string | null; unit: string; stockQuantity: number; minimumStock: number; type: InventoryItemType; category: string; brand: string | null; partNumber: string | null; compatibility: string | null; location: string | null; referenceUnitCost: number; referenceSupplier: string | null; isActive: boolean; createdAt: string; updatedAt: string; createdBy: string | null; updatedBy: string | null; updatedByName: string | null; lastMovementAt: string | null };
+export type InventoryMovement = { id: string; inventoryItemId: string; itemCode: string; itemName: string; movementType: InventoryMovementType; quantity: number; previousStock: number; resultingStock: number; reason: string; referenceDocument: string | null; supplierReference: string | null; workOrderId: string | null; workOrderCode: string | null; observation: string | null; performedBy: string; performedByName: string | null; createdAt: string };
+export type InventoryDashboard = { productsRegistered: number; totalStock: number; lowStockProducts: number; entriesThisMonth: number; exitsThisMonth: number; monthlyFlow: { entries: number; exits: number }; recentMovements: InventoryMovement[]; lowStockItems: InventoryItem[]; health: "HEALTHY" | "ATTENTION" | "CRITICAL" };
+export type PaginatedInventory<T> = { items: T[]; total: number; page: number; limit: number };
+export type MovementPage = PaginatedInventory<InventoryMovement> & { kpis: { total: number; entries: number; exits: number; unitsMoved: number } };
+
+export const ITEM_TYPE_LABELS: Record<InventoryItemType, string> = { PART: "Repuesto", MATERIAL: "Material", TOOL: "Herramienta", CONSUMABLE: "Consumible" };
+export const ENTRY_REASONS = ["Compra a proveedor", "Devolución de material", "Ajuste autorizado", "Reposición", "Existencia inicial", "Otro"];
+export const EXIT_REASONS = ["Uso en reparación", "Herramienta entregada", "Producto dañado", "Ajuste autorizado", "Devolución a proveedor", "Otro"];
+export const CATEGORIES = ["Repuestos de motor", "Lubricantes", "Herramientas", "Materiales de limpieza", "Consumibles", "Otros"];
+export const stockState = (item: InventoryItem) => !item.isActive ? { label: "Inactivo", className: "bg-slate-100 text-slate-700" } : item.stockQuantity <= 0 ? { label: "Agotado", className: "bg-red-100 text-red-800" } : item.stockQuantity <= item.minimumStock ? { label: "Stock bajo", className: "bg-amber-100 text-amber-800" } : { label: "Stock suficiente", className: "bg-emerald-100 text-emerald-800" };
