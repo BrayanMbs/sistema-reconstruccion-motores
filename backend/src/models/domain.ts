@@ -93,6 +93,9 @@ export type OrderFinancialSummary = {
   balance: number | null;
   financialStatus: FinancialStatus;
 };
+export type CashierOrder = OrderFinancialSummary & { operationalStatus: WorkOrderStatus; createdAt: string };
+export type CashierDailySummary = { businessDate: string; cashierName: string | null; paymentCount: number; totalAmount: number; cashAmount: number; transferAmount: number; otherAmount: number; paidOrders: number; pendingOrders: number; partialPayments: number; finalPayments: number };
+export type CashierDashboard = Omit<CashierDailySummary, "pendingOrders"> & { recentPayments: Payment[]; pendingOrders: CashierOrder[] };
 export type AppSettings = { company: { name: string; phone: string; address: string }; finance: { currency: string; taxRate: number } };
 
 export type AuditEvent = {
