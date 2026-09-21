@@ -17,6 +17,7 @@ services:
       - ./backend/database/migrations/006_administrative_workflow.sql:/docker-entrypoint-initdb.d/006_administrative_workflow.sql:ro
       - ./backend/database/migrations/006_cloud_app_users_compatibility.sql:/docker-entrypoint-initdb.d/006_cloud_app_users_compatibility.sql:ro
       - ./backend/database/migrations/007_order_finance.sql:/docker-entrypoint-initdb.d/007_order_finance.sql:ro
+      - ./backend/database/migrations/008_inventory_end_to_end.sql:/docker-entrypoint-initdb.d/008_inventory_end_to_end.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
