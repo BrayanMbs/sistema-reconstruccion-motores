@@ -7,6 +7,7 @@ export type AppUser = {
   email: string;
   role: Role;
   isActive: boolean;
+  mustChangePassword: boolean;
   createdAt: string;
   updatedAt: string;
 };
