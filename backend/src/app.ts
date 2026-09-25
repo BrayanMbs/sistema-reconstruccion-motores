@@ -1,7 +1,7 @@
 import cors, { type CorsOptions } from "cors";
 import express from "express";
 import { env } from "./config/env";
-import { getHealth } from "./controllers/health.controller";
+import { getLiveness } from "./controllers/health.controller";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
 import { apiRouter } from "./routes";
 
@@ -41,7 +41,7 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.get("/health", getHealth);
+app.get("/health", getLiveness);
 app.use("/api", apiRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
