@@ -50,12 +50,15 @@ const buildCloudDatabaseConfig = (
   }
 };
 
+const defaultPoolMax = isProduction ? 1 : 10;
+const poolMax = asNumber(process.env.DB_POOL_MAX, defaultPoolMax);
+
 const database: PoolConfig = databaseUrl
   ? buildCloudDatabaseConfig(
       databaseUrl,
       databaseSsl,
       databaseRejectUnauthorized,
-      asNumber(process.env.DB_POOL_MAX, isProduction ? 5 : 10)
+      poolMax
     )
   : {
       host: process.env.DB_HOST ?? "postgres",
@@ -63,7 +66,7 @@ const database: PoolConfig = databaseUrl
       database: process.env.DB_NAME ?? "motores_db",
       user: process.env.DB_USER ?? "motores_user",
       password: process.env.DB_PASSWORD ?? "motores_password",
-      max: asNumber(process.env.DB_POOL_MAX, 10),
+      max: poolMax,
       connectionTimeoutMillis: asNumber(process.env.DB_CONNECTION_TIMEOUT_MS, 5000),
       idleTimeoutMillis: asNumber(process.env.DB_IDLE_TIMEOUT_MS, 10000)
     };
@@ -86,3 +89,4 @@ export const env = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
   }
 };
+
