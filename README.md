@@ -52,3 +52,10 @@ Get-Content .\backend\database\migrations\006_administrative_workflow.sql | dock
 Si se configuraron `POSTGRES_USER` o `POSTGRES_DB`, sustituya esos valores en el comando. La migración `006` es idempotente y utiliza `IF NOT EXISTS`.
 
 La estructura técnica y las convenciones de colaboración se encuentran en [docs/architecture.md](docs/architecture.md). La API inicial está documentada en [docs/api.md](docs/api.md).
+
+## Despliegue en la Nube (Vercel + Supabase)
+
+Para desplegar la aplicación en Vercel (Frontend y Backend en proyectos independientes) conectada a PostgreSQL en Supabase Cloud, consulte la guía detallada:
+
+- [docs/deployment-vercel.md](docs/deployment-vercel.md)
+
