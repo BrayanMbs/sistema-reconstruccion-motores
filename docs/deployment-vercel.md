@@ -62,7 +62,7 @@ Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node
 * **Fail-Fast en Producción:** Si el backend inicia con `NODE_ENV=production` y `DATABASE_URL` no está definida, el servidor lanza inmediatamente un error explícito y **no realiza fallback a localhost ni a Docker**.
 * **Configuración del Pool (`pg.Pool`):**
   * Reutilización global a nivel de módulo en contenedores calientes (`warm containers`).
-  * `max`: **1 conexión máxima por instancia serverless en producción** (default: `1`, configurable mediante `DB_POOL_MAX`; en desarrollo local el default es `10`). En entornos serverless como Vercel donde las funciones escalan horizontalmente manejando una solicitud concurrente por contenedor, dimensionar el pool a `1` previene la saturación del pooler de Supabase (Supavisor) o de PostgreSQL en el tier gratuito sin degradar el throughput.
+  * `max`: **1 conexión máxima por instancia serverless en producción** (default: `1`, configurable mediante `DB_POOL_MAX`; en desarrollo local el default es `10`). En entornos serverless pueden existir múltiples instancias calientes y cada instancia puede atender concurrencia. Mantener inicialmente un pool pequeño, con un máximo de 1 conexión por instancia, reduce el riesgo de agotar las conexiones disponibles en Supabase/Supavisor. El valor puede incrementarse posteriormente mediante `DB_POOL_MAX` si las métricas muestran contención.
   * `connectionTimeoutMillis`: 10,000 ms (10s) para evitar bloqueos por latencia de red.
   * `idleTimeoutMillis`: 30,000 ms (30s) para liberar rápidamente conexiones ociosas hacia Supavisor.
   * `allowExitOnIdle: true` para que los procesos serverless inactivos finalicen de forma limpia.
@@ -139,9 +139,17 @@ Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node
 | `SUPABASE_SERVICE_ROLE_KEY` | Llave administrativa de servicio de Supabase | **SÍ** | `eyJhbGciOi...` |
 | `FRONTEND_URL` | URL del frontend permitida en CORS | NO | `https://sistema-motores-frontend.vercel.app` |
 | `CORS_ORIGINS` | Lista opcional de orígenes permitidos separados por coma | NO | `https://frontend.vercel.app,http://localhost:3000` |
-| `ALLOW_VERCEL_PREVIEWS` | Habilitar solicitudes de preview deployments de Vercel (default: `false`) | NO | `false` o `true` |
-| `VERCEL_PREVIEW_PROJECT_NAME` | Nombre del proyecto Vercel para acotar previews si `ALLOW_VERCEL_PREVIEWS=true` | NO | `sistema-reconstruccion-motores` |
+| `ALLOW_VERCEL_PREVIEWS` | Habilitar preview deployments de Vercel (Recomendado `false` en producción) | NO | `false` o `true` |
+| `VERCEL_PREVIEW_PROJECT_NAME` | Nombre del proyecto Vercel obligatorio si `ALLOW_VERCEL_PREVIEWS=true` para acotar previews | NO | `sistema-reconstruccion-motores` |
 | `NODE_ENV` | Entorno de ejecución (gestionado automáticamente por Vercel) | NO | `production` |
+
+> [!IMPORTANT]
+> **Política de Seguridad CORS para Producción y Preview Deployments:**
+> - **Recomendación para Producción:** Mantener `ALLOW_VERCEL_PREVIEWS=false`. La seguridad y el control de orígenes tienen prioridad sobre la comodidad.
+> - **Frontend Oficial:** `FRONTEND_URL` debe contener la URL oficial de producción del frontend (ej. `https://sistema-motores-frontend.vercel.app`).
+> - **Orígenes Adicionales:** `CORS_ORIGINS` permite especificar una lista separada por comas de dominios de confianza adicionales. Ambos (`FRONTEND_URL` y `CORS_ORIGINS`) se admiten simultáneamente sin que uno anule al otro.
+> - **Previews Restringidos:** Si se habilitan previews (`ALLOW_VERCEL_PREVIEWS=true`), es indispensable definir `VERCEL_PREVIEW_PROJECT_NAME`. La validación solo autorizará URLs que comiencen estrictamente con el nombre del proyecto (`https://<proyecto>(-[a-zA-Z0-9-]+)?\.vercel\.app`) y **rechazará cualquier dominio `*.vercel.app` ajeno o malicioso**.
+> - **Localhost en Producción:** `http://localhost:*` está denegado por defecto en producción salvo que el administrador lo incluya explícitamente en `CORS_ORIGINS`.
 
 > [!CAUTION]
 > **REGLA DE SEGURIDAD ESTRICTA:**
