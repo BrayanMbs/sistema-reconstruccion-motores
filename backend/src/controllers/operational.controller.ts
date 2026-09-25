@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import type { UpdateOperationalProgressDto } from "../dtos/admin.dtos";
 import { OperationalService } from "../services/operational.service";
 import { AppError } from "../utils/app-error";
-import { limitFromQuery, pageFromQuery, requireText } from "../validators/common.validators";
+import { limitFromQuery, pageFromQuery, requireText, requireUuid } from "../validators/common.validators";
 
 const service = new OperationalService();
 const worker = (request: Request) => request.appUser!.id;
@@ -12,6 +12,7 @@ export const dashboard = async (request: Request, response: Response): Promise<v
 export const listOrders = async (request: Request, response: Response): Promise<void> => { if (!validStatus(request.query.status) || !validPriority(request.query.priority)) throw new AppError("Filtro no válido", 422, "VALIDATION_ERROR"); const page = pageFromQuery(request.query.page); const limit = limitFromQuery(request.query.limit); const result = await service.listOrders(worker(request), { search: typeof request.query.search === "string" ? request.query.search : undefined, status: typeof request.query.status === "string" ? request.query.status : undefined, priority: typeof request.query.priority === "string" ? request.query.priority : undefined, date: typeof request.query.date === "string" ? request.query.date : undefined, page, limit }); response.json({ ...result, page, limit }); };
 export const getOrder = async (request: Request, response: Response): Promise<void> => { response.json({ order: await service.order(worker(request), requireText(request.params.id, "Orden")) }); };
 export const getHistory = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.history(worker(request), requireText(request.params.id, "Orden")) }); };
+export const getTimeline = async (request: Request, response: Response): Promise<void> => { response.json({ items: await service.timeline(worker(request), requireUuid(request.params.id, "Orden")) }); };
 export const start = async (request: Request, response: Response): Promise<void> => { response.json({ order: await service.start(worker(request), requireText(request.params.id, "Orden")) }); };
 export const updateProgress = async (request: Request, response: Response): Promise<void> => { const progress = Number(request.body.progress); if (!Number.isInteger(progress) || progress < 0 || progress > 100) throw new AppError("El avance debe estar entre 0 y 100", 422, "INVALID_PROGRESS"); const input: UpdateOperationalProgressDto = { progress, observation: requireText(request.body.observation, "Observación", 2000) }; response.json({ order: await service.updateProgress(worker(request), requireText(request.params.id, "Orden"), input) }); };
 export const complete = async (request: Request, response: Response): Promise<void> => { response.json({ order: await service.complete(worker(request), requireText(request.params.id, "Orden"), requireText(request.body.observation, "Observación final", 2000)) }); };

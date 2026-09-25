@@ -5,6 +5,7 @@ import { WorkOrderRepository } from "../repositories/work-order.repository";
 import { OperationalRepository, OperatorNotificationRepository } from "../repositories/operational.repository";
 import { AppError } from "../utils/app-error";
 import { AuditService } from "./audit.service";
+import { OrderTimelineService } from "./order-timeline.service";
 export class WorkOrderService {
   private readonly orders = new WorkOrderRepository();
   private readonly clients = new ClientRepository();
@@ -12,6 +13,7 @@ export class WorkOrderService {
   private readonly audit = new AuditService();
   private readonly operational = new OperationalRepository();
   private readonly notifications = new OperatorNotificationRepository();
+  private readonly timelineService = new OrderTimelineService();
 
   list(filters: { search?: string; status?: string; page: number; limit: number }) { return this.orders.list(filters); }
 
@@ -27,6 +29,7 @@ export class WorkOrderService {
   }
 
   history(id: string) { return this.get(id).then(() => this.operational.eventsForOrder(id)); }
+  timeline(id: string) { return this.get(id).then(() => this.timelineService.list(id)); }
 
   async create(input: CreateWorkOrderDto, actorId: string) {
     if (!await this.clients.findById(input.clientId)) throw new AppError("Cliente no encontrado", 422, "CLIENT_NOT_FOUND");
