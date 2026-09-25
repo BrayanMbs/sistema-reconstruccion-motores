@@ -2,7 +2,9 @@
 
 import { getSupabase } from "./supabase";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8080";
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8080";
+const baseUrl = rawBaseUrl.replace(/\/+$/, "");
+
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number, public readonly code?: string, public readonly details?: Record<string, unknown>) { super(message); }
