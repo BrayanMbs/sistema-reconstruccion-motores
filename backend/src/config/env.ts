@@ -71,17 +71,29 @@ const database: PoolConfig = databaseUrl
       idleTimeoutMillis: asNumber(process.env.DB_IDLE_TIMEOUT_MS, 10000)
     };
 
-const corsOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "http://localhost:3000")
-  .split(",")
+const rawCorsOrigins = process.env.CORS_ORIGINS || process.env.FRONTEND_URL;
+const corsOrigins = (rawCorsOrigins
+  ? rawCorsOrigins.split(",")
+  : isProduction
+    ? []
+    : ["http://localhost:3000"])
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+if (process.env.FRONTEND_URL && !corsOrigins.includes(process.env.FRONTEND_URL.trim())) {
+  corsOrigins.push(process.env.FRONTEND_URL.trim());
+}
+
+const allowVercelPreviews = process.env.ALLOW_VERCEL_PREVIEWS === "true";
+const vercelPreviewProject = process.env.VERCEL_PREVIEW_PROJECT_NAME?.trim();
 
 export const env = {
   isProduction,
   port: asNumber(process.env.PORT, 8080),
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
   corsOrigins,
-  allowVercelPreviews: process.env.ALLOW_VERCEL_PREVIEWS === "true",
+  allowVercelPreviews,
+  vercelPreviewProject,
   database,
   supabase: {
     url: process.env.SUPABASE_URL,

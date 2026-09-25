@@ -9,6 +9,15 @@ export const app = express();
 
 app.set("trust proxy", 1);
 
+const isVercelPreviewOrigin = (origin: string): boolean => {
+  if (!env.allowVercelPreviews || !env.vercelPreviewProject) {
+    return false;
+  }
+  const escapedProject = env.vercelPreviewProject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const previewRegex = new RegExp(`^https:\\/\\/${escapedProject}(-[a-zA-Z0-9_-]+)?\\.vercel\\.app$`);
+  return previewRegex.test(origin);
+};
+
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     if (!origin) {
@@ -21,7 +30,7 @@ const corsOptions: CorsOptions = {
       return;
     }
 
-    if (env.allowVercelPreviews && /^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(origin)) {
+    if (isVercelPreviewOrigin(origin)) {
       callback(null, true);
       return;
     }
