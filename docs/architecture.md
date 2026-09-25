@@ -53,4 +53,5 @@ Docker Compose es una herramienta opcional de desarrollo local. Levanta frontend
 
 ## Trabajo entre tres desarrolladores
 
-Partan del flujo `main → develop → feature/*`. Dividan tickets por módulos y mantengan los contratos DTO/API documentados. Coordinen los cambios en archivos compartidos (rutas raíz, configuración y contratos), y eviten mezclar implementación de dominio con infraestructura o interfaz.
+Sigan el flujo de trabajo establecido: `develop` es la rama de integración donde se fusionan las ramas `feature/*`, `fix/*` y `chore/*` mediante Pull Request. La rama `main` es la versión estable de producción en Vercel, actualizada exclusivamente a través de Pull Requests de release desde `develop`. Dividan tickets por módulos y mantengan los contratos DTO/API documentados. Coordinen los cambios en archivos compartidos (rutas raíz, configuración y contratos), y eviten mezclar implementación de dominio con infraestructura o interfaz.
+

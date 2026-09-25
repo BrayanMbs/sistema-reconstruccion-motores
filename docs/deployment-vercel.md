@@ -203,7 +203,7 @@ Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node
    * `VERCEL_PREVIEW_PROJECT_NAME`: `sistema-reconstruccion-motores`
 8. En **Production Branch**, seleccionar:
    ```
-   develop
+   main
    ```
 9. Pulsar **Deploy**.
 10. Una vez completado, copiar el dominio asignado (ej. `https://sistema-motores-backend.vercel.app`).
@@ -257,7 +257,7 @@ Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node
    * `NEXT_PUBLIC_SUPABASE_ANON_KEY`: (Anon key).
 7. En **Production Branch**, seleccionar:
    ```
-   develop
+   main
    ```
 8. Pulsar **Deploy**.
 9. Al finalizar, copiar el dominio final del Frontend (ej. `https://sistema-motores-frontend.vercel.app`).
@@ -265,39 +265,251 @@ Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node
 
 ---
 
-## 9. Flujo de Desarrollo y Actualizaciones Futuras
+## 9. Modelo Formal de Ramas y Estrategia de Releases
 
-Una vez configurados los dos proyectos en Vercel conectados a la rama `develop`:
+El repositorio establece de forma estricta el siguiente flujo de trabajo Git y despliegue:
 
-1. **Crear una rama para la nueva funcionalidad:**
-   ```bash
-   git switch develop
-   git pull origin develop
-   git switch -c feature/nueva-funcionalidad
-   ```
-2. **Desarrollar y probar localmente:**
-   ```bash
-   # En backend
-   npm test
-   npm run build
-   npm run lint
+```
+  feature/*, fix/*, chore/*
+             │
+             ▼  (Pull Request revisado + CI)
+          develop (Integración continua del equipo)
+             │
+             ▼  (Pruebas completas + Pull Request de Release)
+           main  (Versión estable de producción)
+             │
+             ▼  (Deploy automático en Vercel)
+     VERCEL PRODUCCIÓN
+```
 
-   # En frontend
-   npm test
-   npm run build
-   npm run lint
-   ```
-3. **Subir cambios y abrir Pull Request hacia `develop`:**
-   ```bash
-   git push -u origin feature/nueva-funcionalidad
-   ```
-   *Vercel generará automáticamente **Preview Deployments** para probar los cambios en aislamiento.*
-4. **Revisar y fusionar el PR en `develop`:**
-   Al hacer merge en `develop`, Vercel detectará el commit y realizará el **Redeploy automático a Producción** tanto del Frontend como del Backend en cuestión de minutos.
+### Roles de las Ramas
+* **`main` (PRODUCCIÓN):** Representa exclusivamente la versión estable y auditada desplegada en producción en Vercel.
+  * **Vercel Production Branch:** Los proyectos de frontend y backend en Vercel escuchan **únicamente a `main`**.
+  * **Cero trabajo directo:** Queda estrictamente prohibido hacer commits directos, pushes directos o rebases destructivos sobre `main`.
+  * **Actualización exclusiva:** `main` solo se actualiza mediante un **Pull Request de release desde `develop`** (o un PR de `hotfix/*` en emergencias críticas).
+* **`develop` (INTEGRACIÓN / SIGUIENTE VERSIÓN):** Rama de integración continua y base de trabajo del equipo.
+  * Todo trabajo individual se integra aquí mediante Pull Request.
+  * **Aislamiento de Producción:** Los cambios integrados a `develop` **NO modifican automáticamente producción**.
+* **`feature/*`, `fix/*`, `chore/*` (TRABAJO INDIVIDUAL):** Ramas de desarrollo creadas a partir de `develop`.
+
+### Reglas Estrictas del Flujo
+1. **Nunca:** `feature/*` ➔ `main` (sin pasar por `develop`).
+2. **Nunca:** Push directo a `main`.
+3. **Nunca:** `develop` auto-deploy a producción.
+4. **Distinción fundamental:** La rama por defecto de GitHub (ej. `develop` para el trabajo diario) es **independiente** de la Production Branch en Vercel (`main`).
 
 ---
 
-## 10. Resolución de Problemas Frecuentes (Troubleshooting)
+## 10. Procedimiento de Migraciones Futuras
+
+> [!CAUTION]
+> **REGLA DE ORO DE BASE DE DATOS:**
+> Las migraciones **JAMÁS se ejecutan automáticamente desde Vercel** ni durante el startup del servidor Express.
+> Supabase Cloud es la base de datos de producción y su esquema debe ser inmutable durante el despliegue de código.
+
+Cuando el trabajo en `develop` requiera una nueva migración (ej. `010_nueva_tabla.sql`):
+
+1. **Creación:** Desarrollar y versionar el script SQL en `backend/database/migrations/010_nueva_tabla.sql`.
+2. **Pruebas en desarrollo:** Validar en base de datos local y/o entorno de desarrollo.
+3. **Integración a develop:** Fusionar la rama en `develop` tras pasar revisión y suite de pruebas.
+4. **Aplicación controlada en Supabase:** Antes de liberar la release a producción, ejecutar el script autorizado con credenciales administrativas:
+   ```bash
+   npm --prefix backend run db:cloud
+   ```
+5. **Verificación de auditoría:** Comprobar en Supabase SQL Editor que el registro `010_nueva_tabla.sql` figure en la tabla `public.app_schema_migrations`.
+6. **Release a producción:** Abrir el Pull Request de release `develop` ➔ `main`.
+7. **Despliegue en Vercel:** Al aprobar y fusionar en `main`, el código desplegado asumirá un esquema que ya fue validado y migrado.
+
+---
+
+## 11. Separación de Entornos: Desarrollo vs Producción
+
+| Dimensión | Entorno de Desarrollo | Entorno de Producción |
+| :--- | :--- | :--- |
+| **Rama Git** | `feature/*`, `fix/*`, `develop` | `main` |
+| **Hosting Frontend** | Local (`localhost:3000`) o Docker | Vercel (`frontend` project) |
+| **Hosting Backend** | Local (`localhost:8080`) o Docker | Vercel (`backend` project, Serverless) |
+| **Base de Datos** | PostgreSQL local (Docker Compose) o Supabase dev | Supabase Cloud (PostgreSQL + Supavisor Pooler) |
+| **Pool Conexiones** | Default: `10` conexiones | Default: `1` conexión por instancia (`DB_POOL_MAX=1`) |
+| **CORS** | Flexible (`localhost:*`, `127.0.0.1:*`) | Estricto (`FRONTEND_URL` oficial, `ALLOW_VERCEL_PREVIEWS=false`) |
+| **Liveness / Readiness** | `/health` (200), `/api/health` (200/503) | `/health` (200), `/api/health` (200/503 con DB check) |
+
+---
+
+## 12. Orden Cronológico del Despliegue en Producción
+
+Una vez aprobado el Pull Request de release `develop` ➔ `main`:
+
+1. **Fusionar el PR de release:** `develop` se fusiona limpiamente en `main`.
+2. **Crear/Configurar Proyecto Backend en Vercel:**
+   * Root Directory: `backend`
+   * Framework Preset: `Other`
+   * Production Branch: `main`
+3. **Cargar Variables de Entorno del Backend:**
+   * `DATABASE_URL` (URI de Supavisor Pooler en Supabase).
+   * `DB_SSL=true`
+   * `DB_SSL_REJECT_UNAUTHORIZED=false`
+   * `DB_POOL_MAX=1`
+   * `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   * `ALLOW_VERCEL_PREVIEWS=false`
+   * `NODE_ENV=production`
+   * `FRONTEND_URL` (URL temporal o esperada del frontend).
+4. **Desplegar Backend:** Pulsar **Deploy** y obtener la URL asignada (ej. `https://sistema-motores-backend.vercel.app`).
+5. **Verificar Liveness Probe:**
+   ```bash
+   curl -i https://sistema-motores-backend.vercel.app/health
+   ```
+   Debe responder HTTP 200 `{ "status": "UP", "service": "sistema-reconstruccion-motores" }`.
+6. **Verificar Readiness Probe:**
+   ```bash
+   curl -i https://sistema-motores-backend.vercel.app/api/health
+   ```
+   Debe responder HTTP 200 `{ "status": "UP", "database": "connected" }`.
+7. **Crear/Configurar Proyecto Frontend en Vercel:**
+   * Root Directory: `frontend`
+   * Framework Preset: `Next.js`
+   * Production Branch: `main`
+8. **Cargar Variables de Entorno del Frontend:**
+   * `NEXT_PUBLIC_API_URL` (URL real del backend obtenida en el paso 4, sin pleca final).
+   * `NEXT_PUBLIC_SUPABASE_URL`
+   * `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+9. **Desplegar Frontend:** Pulsar **Deploy** y obtener la URL final asignada (ej. `https://sistema-motores-frontend.vercel.app`).
+10. **Alinear CORS en Backend:** Si el dominio final del frontend difiere de lo configurado en el paso 3, actualizar `FRONTEND_URL` en el backend y ejecutar **Redeploy**.
+11. **Configurar Supabase Auth:**
+    * Ir a **Authentication** > **URL Configuration**.
+    * Establecer **Site URL** con el dominio final del frontend (`https://sistema-motores-frontend.vercel.app`).
+    * En **Redirect URLs**, agregar `https://sistema-motores-frontend.vercel.app/**`.
+12. **Ejecutar Smoke Tests:** Realizar el checklist de verificación post-despliegue.
+
+---
+
+## 13. Checklist de Smoke Tests Post-Despliegue
+
+Tras completar el despliegue en Vercel, ejecutar las siguientes comprobaciones sin alterar datos críticos:
+
+* [ ] **PÚBLICO:**
+  * Carga correcta de la página principal (`/`).
+  * Acceso al portal de seguimiento público (`/seguimiento`).
+  * Consulta de prueba con orden válida y código de seguimiento (debe mostrar estado sin datos sensibles).
+  * Consulta con código inválido (debe mostrar mensaje de error amigable).
+  * Rate limiting en seguimiento público (bloqueo ante exceso de peticiones repetitivas).
+* [ ] **AUTENTICACIÓN:**
+  * Inicio de sesión con credenciales válidas.
+  * Rechazo ante contraseña incorrecta o usuario inactivo.
+  * Cierre de sesión y revocación del token de cliente.
+* [ ] **ADMINISTRADOR:**
+  * Carga del panel principal (`/admin/dashboard`) con conteo de métricas.
+  * Vista de usuarios (`/admin/users`), clientes (`/admin/clients`) y órdenes (`/admin/work-orders`).
+  * Consulta de eventos en auditoría (`/admin/audit`).
+* [ ] **SEGURIDAD Y RESET DE CREDENCIALES:**
+  * Restablecimiento administrativo de credenciales para un usuario de prueba.
+  * Generación de contraseña temporal con bandera `must_change_password=true`.
+  * Inicio de sesión del usuario con contraseña temporal ➔ Redirección obligatoria a `/cambiar-contrasena`.
+  * Bloqueo de rutas protegidas hasta cambiar la contraseña.
+  * Cambio exitoso de contraseña y acceso posterior normal.
+* [ ] **ADMINISTRATIVO:**
+  * Gestión y consulta de clientes (`/administrativo/clientes`).
+  * Creación y consulta de órdenes de trabajo (`/administrativo/ordenes`).
+  * Asignación de técnico u operario a orden.
+* [ ] **OPERATIVO:**
+  * Ingreso con usuario técnico (`/operativo/inicio`).
+  * Consulta exclusiva de órdenes asignadas al operario.
+  * Registro de avance y observaciones técnicas.
+* [ ] **INVENTARIO:**
+  * Listado de productos e insumos (`/inventario`).
+  * Indicadores de existencias y alertas de stock bajo.
+  * Registro de movimientos de inventario.
+* [ ] **CAJA Y FINANZAS:**
+  * Consulta de balance y cobros registrados (`/caja`).
+  * Registro de pagos y liquidaciones vinculadas a órdenes.
+* [ ] **LÍNEA DE TIEMPO (TIMELINE):**
+  * Visualización cronológica correcta de eventos en el detalle de una orden de trabajo.
+
+---
+
+## 14. Ciclo de Vida y Futuras Actualizaciones
+
+Una vez estabilizada la producción en `main`:
+
+1. **Nuevo requerimiento o corrección:**
+   ```bash
+   git switch develop
+   git pull origin develop
+   git switch -c feature/nueva-mejora
+   ```
+2. **Ciclo de calidad local:**
+   ```bash
+   npm --prefix backend test && npm --prefix backend run build
+   npm --prefix frontend test && npm --prefix frontend run build
+   ```
+3. **Pull Request hacia `develop`:**
+   * GitHub Actions ejecuta automáticamente las pruebas y builds.
+   * Revisión por pares e integración a `develop`.
+   * **`main` y producción permanecen intactos.**
+4. **Liberación de nueva versión:**
+   * Cuando se acumulen mejoras listas para producción, se abre un **Pull Request de release `develop` ➔ `main`**.
+   * Al aprobarse y fusionarse, Vercel detecta el cambio en `main` y despliega la nueva versión en producción sin intervención manual.
+
+---
+
+## 15. Flujo de Hotfix de Emergencia en Producción
+
+Si se detecta un fallo crítico en el entorno de producción que requiere resolución inmediata:
+
+```
+  main (Fallo detectado)
+    │
+    ▼ (git switch -c hotfix/urgente)
+  hotfix/urgente
+    │
+    ├─────────────────────────────┐
+    ▼ (PR hacia main)             ▼ (PR / Merge hacia develop)
+  main                          develop
+    │                             │
+    ▼ (Vercel Production)         ▼ (Siguiente release protegida)
+  Producción corregida          Cero divergencia
+```
+
+1. **Crear rama de hotfix desde `main`:**
+   ```bash
+   git switch main
+   git pull origin main
+   git switch -c hotfix/descripcion-del-fallo
+   ```
+2. **Aplicar la corrección mínima necesaria:** Escribir la prueba que reproduce el fallo y resolverlo.
+3. **PR hacia `main`:** Revisión ágil, fusión y despliegue inmediato en Vercel.
+4. **SINCRONIZACIÓN OBLIGATORIA A `develop`:**
+   Inmediatamente después del merge a `main`, fusionar o abrir PR del hotfix hacia `develop`:
+   ```bash
+   git switch develop
+   git pull origin develop
+   git merge origin/main
+   git push origin develop
+   ```
+   Esto garantiza que **el error no vuelva a introducirse** en la siguiente release planificada (principio de no divergencia).
+
+---
+
+## 16. Recomendaciones de Protección de Ramas en GitHub
+
+Para garantizar la integridad del ciclo de release, se recomienda configurar las siguientes reglas en GitHub (**Settings** > **Branches**):
+
+* **Rama `main` (Producción):**
+  * `Require a pull request before merging` (impide commits directos).
+  * `Require approvals` (mínimo 1 aprobación).
+  * `Dismiss stale pull request approvals when new commits are pushed`.
+  * `Require status checks to pass before merging` (seleccionar los checks de GitHub Actions: `Backend (Lint, Test, Build)` y `Frontend (Lint, Test, Build)`).
+  * `Require branches to be up to date before merging`.
+  * `Do not allow force pushes`.
+  * `Do not allow deletions`.
+* **Rama `develop` (Integración):**
+  * `Require a pull request before merging`.
+  * `Require status checks to pass before merging`.
+  * `Do not allow force pushes`.
+
+---
+
+## 17. Resolución de Problemas Frecuentes (Troubleshooting)
 
 ### Error 403: `CORS_FORBIDDEN` o error de origen en el navegador
 * **Causa:** El origen desde el cual carga el frontend no coincide con el valor configurado en `FRONTEND_URL` ni en `CORS_ORIGINS`.

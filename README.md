@@ -53,9 +53,18 @@ Si se configuraron `POSTGRES_USER` o `POSTGRES_DB`, sustituya esos valores en el
 
 La estructura técnica y las convenciones de colaboración se encuentran en [docs/architecture.md](docs/architecture.md). La API inicial está documentada en [docs/api.md](docs/api.md).
 
+## Estrategia de Ramas y Releases
+
+- **`main` (Producción):** Versión estable auditada conectada exclusivamente a Vercel Production. Solo se actualiza mediante Pull Request de release desde `develop`.
+- **`develop` (Integración):** Rama base de integración continua del equipo donde se integran los Pull Requests de desarrollo.
+- **`feature/*`, `fix/*`, `chore/*`:** Ramas de trabajo individual dirigidas siempre hacia `develop`.
+
+Para más detalles sobre el flujo de release, despliegue y calidad, consulte [docs/deployment-vercel.md](docs/deployment-vercel.md) y [docs/development.md](docs/development.md).
+
 ## Despliegue en la Nube (Vercel + Supabase)
 
 Para desplegar la aplicación en Vercel (Frontend y Backend en proyectos independientes) conectada a PostgreSQL en Supabase Cloud, consulte la guía detallada:
 
 - [docs/deployment-vercel.md](docs/deployment-vercel.md)
+
 
