@@ -71,18 +71,29 @@ const database: PoolConfig = databaseUrl
       idleTimeoutMillis: asNumber(process.env.DB_IDLE_TIMEOUT_MS, 10000)
     };
 
-const rawCorsOrigins = process.env.CORS_ORIGINS || process.env.FRONTEND_URL;
-const corsOrigins = (rawCorsOrigins
-  ? rawCorsOrigins.split(",")
-  : isProduction
-    ? []
-    : ["http://localhost:3000"])
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const configuredOrigins: string[] = [];
 
-if (process.env.FRONTEND_URL && !corsOrigins.includes(process.env.FRONTEND_URL.trim())) {
-  corsOrigins.push(process.env.FRONTEND_URL.trim());
+if (process.env.CORS_ORIGINS) {
+  configuredOrigins.push(...process.env.CORS_ORIGINS.split(","));
 }
+
+if (process.env.FRONTEND_URL) {
+  configuredOrigins.push(process.env.FRONTEND_URL);
+}
+
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/+$/, "");
+
+const corsOrigins = Array.from(
+  new Set(
+    (configuredOrigins.length > 0
+      ? configuredOrigins
+      : isProduction
+        ? []
+        : ["http://localhost:3000"])
+      .map(normalizeOrigin)
+      .filter(Boolean)
+  )
+);
 
 const allowVercelPreviews = process.env.ALLOW_VERCEL_PREVIEWS === "true";
 const vercelPreviewProject = process.env.VERCEL_PREVIEW_PROJECT_NAME?.trim();
