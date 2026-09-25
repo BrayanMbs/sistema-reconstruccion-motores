@@ -33,6 +33,7 @@ export function AdministrativeShell({ children }: PropsWithChildren) {
         const session = await getSupabase()?.auth.getSession();
         if (!session?.data.session) throw new Error("NO_SESSION");
         const result = await apiRequest<{ user: AppUser }>("/api/auth/me");
+        if (result.user.mustChangePassword) { router.replace("/cambiar-contrasena"); return; }
         if (result.user.role !== "ADMINISTRATIVE") { router.replace(roleHome(result.user.role)); return; }
         setUser(result.user);
       } catch { await getSupabase()?.auth.signOut(); router.replace("/login"); }
