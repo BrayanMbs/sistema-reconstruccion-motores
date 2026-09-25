@@ -1,5 +1,5 @@
 export type Role = "ADMIN" | "ADMINISTRATIVE" | "CASHIER" | "INVENTORY" | "OPERATOR";
-export type AppUser = { id: string; fullName: string; email: string; role: Role; isActive: boolean; createdAt: string; updatedAt: string };
+export type AppUser = { id: string; fullName: string; email: string; role: Role; isActive: boolean; mustChangePassword: boolean; createdAt: string; updatedAt: string };
 export type Client = { id: string; fullName: string; identificationType: string; identification: string; phone: string | null; email: string | null; address: string | null; createdAt: string };
 export type WorkOrderStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type WorkOrderPriority = "NORMAL" | "HIGH" | "URGENT";

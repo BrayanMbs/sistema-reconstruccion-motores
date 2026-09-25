@@ -29,7 +29,7 @@ export function LoginForm() {
       if (!response.ok) throw new ApiError(result.message ?? "No fue posible iniciar sesión", response.status);
       const { error: sessionError } = await supabase.auth.setSession({ access_token: result.session.accessToken, refresh_token: result.session.refreshToken });
       if (sessionError) throw sessionError;
-      router.replace(roleHome(result.user.role)); router.refresh();
+      router.replace(result.user.mustChangePassword ? "/cambiar-contrasena" : roleHome(result.user.role)); router.refresh();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No fue posible iniciar sesión"); }
     finally { setLoading(false); }
   };
