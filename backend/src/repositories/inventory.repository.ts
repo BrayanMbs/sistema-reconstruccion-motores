@@ -26,13 +26,73 @@ export class InventoryRepository {
   async update(id: string, input: UpdateInventoryItemInput, actorId: string): Promise<InventoryItem | null> { const result = await databasePool.query(`UPDATE inventory_items SET name=$2,item_type=$3,category=$4,brand=$5,part_number=$6,description=$7,compatibility=$8,unit=$9,location=$10,minimum_stock=$11,reference_unit_cost=$12,reference_supplier=$13,is_active=$14,updated_by=$15,updated_at=now() WHERE id=$1 RETURNING *`, [id,input.name,input.type,input.category,input.brand,input.partNumber,input.description,input.compatibility,input.unit,input.location,input.minimumStock,input.referenceUnitCost,input.referenceSupplier,input.isActive,actorId]); return result.rowCount ? { ...mapItem(result.rows[0]), updatedByName:null,lastMovementAt:null } : null; }
   async setStatus(id: string, isActive: boolean, actorId: string): Promise<InventoryItem | null> { const result = await databasePool.query("UPDATE inventory_items SET is_active=$2,updated_by=$3,updated_at=now() WHERE id=$1 RETURNING *", [id,isActive,actorId]); return result.rowCount ? { ...mapItem(result.rows[0]),updatedByName:null,lastMovementAt:null } : null; }
   async createMovement(itemId: string, type: "ENTRY" | "EXIT", input: InventoryMovementInput, actorId: string): Promise<InventoryMovement> {
-    const client = await databasePool.connect(); try { await client.query("BEGIN"); const locked = await client.query("SELECT id,sku,name,stock_quantity,is_active FROM inventory_items WHERE id=$1 FOR UPDATE", [itemId]); if (!locked.rowCount) throw new Error("ITEM_NOT_FOUND"); const item=locked.rows[0]; if (!item.is_active) throw new Error("ITEM_INACTIVE"); if (type === "EXIT" && Number(item.stock_quantity) < input.quantity) { const error=Object.assign(new Error("INSUFFICIENT_STOCK"),{availableStock:Number(item.stock_quantity)}); throw error; } if (type === "EXIT" && input.reason === "Uso en reparación") { const order=await client.query("SELECT id FROM work_orders WHERE id=$1 AND status IN ('PENDING','IN_PROGRESS')",[input.workOrderId]); if (!order.rowCount) throw new Error("WORK_ORDER_NOT_ACTIVE"); } const previousStock=Number(item.stock_quantity); const resultingStock=type === "ENTRY" ? previousStock + input.quantity : previousStock - input.quantity; await client.query("UPDATE inventory_items SET stock_quantity=$2,updated_by=$3,updated_at=now() WHERE id=$1",[itemId,resultingStock,actorId]); const movement=await this.insertMovement(client,{itemId,type,quantity:input.quantity,previousStock,resultingStock,reason:input.reason,actorId,referenceDocument:input.referenceDocument,supplierReference:input.supplierReference,workOrderId:input.workOrderId,observation:input.observation}); await client.query("COMMIT"); return {...movement,itemCode:item.sku,itemName:item.name,performedByName:null,workOrderCode:null}; } catch(error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
+    const client = await databasePool.connect();
+    try {
+      await client.query("BEGIN");
+      const movement = await this.createMovementInTransaction(client, itemId, type, input, actorId);
+      await client.query("COMMIT");
+      return movement;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  private async createMovementInTransaction(client: PoolClient, itemId: string, type: "ENTRY" | "EXIT", input: InventoryMovementInput, actorId: string): Promise<InventoryMovement> {
+    const locked = await client.query("SELECT id,sku,name,stock_quantity,is_active FROM inventory_items WHERE id=$1 FOR UPDATE", [itemId]);
+    if (!locked.rowCount) throw new Error("ITEM_NOT_FOUND");
+    const item = locked.rows[0];
+    if (!item.is_active) throw new Error("ITEM_INACTIVE");
+    if (type === "EXIT" && Number(item.stock_quantity) < input.quantity) {
+      throw Object.assign(new Error("INSUFFICIENT_STOCK"), { availableStock: Number(item.stock_quantity) });
+    }
+    if (type === "EXIT" && input.reason === "Uso en reparación") {
+      const order = await client.query("SELECT id FROM work_orders WHERE id=$1 AND status IN ('PENDING','IN_PROGRESS')", [input.workOrderId]);
+      if (!order.rowCount) throw new Error("WORK_ORDER_NOT_ACTIVE");
+    }
+    const previousStock = Number(item.stock_quantity);
+    const resultingStock = type === "ENTRY" ? previousStock + input.quantity : previousStock - input.quantity;
+    await client.query("UPDATE inventory_items SET stock_quantity=$2,updated_by=$3,updated_at=now() WHERE id=$1", [itemId, resultingStock, actorId]);
+    const movement = await this.insertMovement(client, { itemId, type, quantity: input.quantity, previousStock, resultingStock, reason: input.reason, actorId, referenceDocument: input.referenceDocument, supplierReference: input.supplierReference, workOrderId: input.workOrderId, observation: input.observation });
+    return { ...movement, itemCode: item.sku, itemName: item.name, performedByName: null, workOrderCode: null };
   }
   private async insertMovement(client: PoolClient, input: { itemId:string; type:"ENTRY"|"EXIT"|"ADJUSTMENT"; quantity:number; previousStock:number; resultingStock:number; reason:string; actorId:string; referenceDocument:string|null; supplierReference:string|null; workOrderId:string|null; observation:string|null }): Promise<InventoryMovement> { const result=await client.query("INSERT INTO inventory_movements (inventory_item_id,movement_type,quantity,previous_stock,resulting_stock,reason,reference_document,supplier_reference,work_order_id,observation,performed_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *",[input.itemId,input.type,input.quantity,input.previousStock,input.resultingStock,input.reason,input.referenceDocument,input.supplierReference,input.workOrderId,input.observation,input.actorId]); return mapMovement({...result.rows[0],item_code:"",item_name:"",performed_by_name:null,work_order_code:null}); }
   async movements(filters: InventoryMovementFilters) { const clauses:string[]=[]; const params:unknown[]=[]; const add=(x:string,v:unknown)=>{params.push(v);clauses.push(x.replace("?",`$${params.length}`));}; if(filters.itemId)add("m.inventory_item_id = ?",filters.itemId);if(filters.movementType)add("m.movement_type = ?",filters.movementType);if(filters.responsibleUserId)add("m.performed_by = ?",filters.responsibleUserId);if(filters.reason)add("m.reason ILIKE ?",`%${filters.reason}%`);if(filters.startDate)add("m.created_at >= ?::date",filters.startDate);if(filters.endDate)add("m.created_at < (?::date + interval '1 day')",filters.endDate);if(filters.workOrderId)add("m.work_order_id = ?",filters.workOrderId); const where=clauses.length?`WHERE ${clauses.join(" AND ")}`:"";const total=await databasePool.query(`SELECT count(*)::int AS count,COALESCE(sum(quantity),0)::numeric AS units FROM inventory_movements m ${where}`,params);const kpis=await databasePool.query(`SELECT count(*) FILTER (WHERE movement_type='ENTRY')::int AS entries,count(*) FILTER (WHERE movement_type='EXIT')::int AS exits FROM inventory_movements m ${where}`,params);params.push(filters.limit,(filters.page-1)*filters.limit);const rows=await databasePool.query(`${movementSelect} ${where} ORDER BY m.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);return {items:rows.rows.map(mapMovement),total:total.rows[0].count,page:filters.page,limit:filters.limit,kpis:{total:total.rows[0].count,entries:kpis.rows[0].entries,exits:kpis.rows[0].exits,unitsMoved:Number(total.rows[0].units)}}; }
   async dashboard(): Promise<InventoryDashboard> { const [summary,flow,recent,low]=await Promise.all([databasePool.query("SELECT count(*)::int AS products,COALESCE(sum(stock_quantity),0)::numeric AS stock,count(*) FILTER (WHERE is_active AND stock_quantity <= minimum_stock)::int AS low FROM inventory_items"),databasePool.query("SELECT COALESCE(sum(quantity) FILTER (WHERE movement_type='ENTRY'),0)::numeric AS entries,COALESCE(sum(quantity) FILTER (WHERE movement_type='EXIT'),0)::numeric AS exits FROM inventory_movements WHERE created_at >= date_trunc('month',now())"),databasePool.query(`${movementSelect} ORDER BY m.created_at DESC LIMIT 6`),databasePool.query(`${itemSelect} WHERE i.is_active AND i.stock_quantity <= i.minimum_stock ORDER BY i.stock_quantity ASC,i.name LIMIT 6`)]);const lowCount=summary.rows[0].low;return {productsRegistered:summary.rows[0].products,totalStock:Number(summary.rows[0].stock),lowStockProducts:lowCount,entriesThisMonth:Number(flow.rows[0].entries),exitsThisMonth:Number(flow.rows[0].exits),monthlyFlow:{entries:Number(flow.rows[0].entries),exits:Number(flow.rows[0].exits)},recentMovements:recent.rows.map(mapMovement),lowStockItems:low.rows.map(mapItem),health:lowCount===0?"HEALTHY":lowCount>=5?"CRITICAL":"ATTENTION"}; }
   async activeWorkOrders() { const result = await databasePool.query("SELECT id, code FROM work_orders WHERE status IN ('PENDING','IN_PROGRESS') ORDER BY created_at DESC LIMIT 100"); return result.rows.map((row) => ({ id: String(row.id), code: String(row.code) })); }
   async allocations(orderId:string) { const result=await databasePool.query("SELECT a.*,i.sku,i.name,i.unit FROM work_order_inventory a JOIN inventory_items i ON i.id=a.inventory_item_id WHERE a.work_order_id=$1 ORDER BY i.name",[orderId]);return result.rows.map(mapAllocation); }
-  async allocate(orderId:string,itemId:string,quantity:number,actorId:string) { await this.createMovement(itemId,"EXIT",{quantity,reason:"Uso en reparación",referenceDocument:null,supplierReference:null,workOrderId:orderId,observation:"Asignación desde orden de trabajo"},actorId);await databasePool.query("INSERT INTO work_order_inventory (work_order_id,inventory_item_id,quantity,assigned_by) VALUES ($1,$2,$3,$4) ON CONFLICT (work_order_id,inventory_item_id) DO UPDATE SET quantity=work_order_inventory.quantity+EXCLUDED.quantity,assigned_at=now(),assigned_by=EXCLUDED.assigned_by",[orderId,itemId,quantity,actorId]); }
-  async release(orderId:string,itemId:string,actorId:string) { const allocation=await databasePool.query("DELETE FROM work_order_inventory WHERE work_order_id=$1 AND inventory_item_id=$2 RETURNING quantity",[orderId,itemId]);if(!allocation.rowCount)return false;await this.createMovement(itemId,"ENTRY",{quantity:Number(allocation.rows[0].quantity),reason:"Devolución de material",referenceDocument:null,supplierReference:null,workOrderId:orderId,observation:"Devolución de asignación de orden"},actorId);return true; }
+  async allocate(orderId: string, itemId: string, quantity: number, actorId: string) {
+    const client = await databasePool.connect();
+    try {
+      await client.query("BEGIN");
+      await this.createMovementInTransaction(client, itemId, "EXIT", { quantity, reason: "Uso en reparación", referenceDocument: null, supplierReference: null, workOrderId: orderId, observation: "Asignación desde orden de trabajo" }, actorId);
+      await client.query("INSERT INTO work_order_inventory (work_order_id,inventory_item_id,quantity,assigned_by) VALUES ($1,$2,$3,$4) ON CONFLICT (work_order_id,inventory_item_id) DO UPDATE SET quantity=work_order_inventory.quantity+EXCLUDED.quantity,assigned_at=now(),assigned_by=EXCLUDED.assigned_by", [orderId, itemId, quantity, actorId]);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  async release(orderId: string, itemId: string, actorId: string) {
+    const client = await databasePool.connect();
+    try {
+      await client.query("BEGIN");
+      const allocation = await client.query("DELETE FROM work_order_inventory WHERE work_order_id=$1 AND inventory_item_id=$2 RETURNING quantity", [orderId, itemId]);
+      if (!allocation.rowCount) {
+        await client.query("ROLLBACK");
+        return false;
+      }
+      await this.createMovementInTransaction(client, itemId, "ENTRY", { quantity: Number(allocation.rows[0].quantity), reason: "Devolución de material", referenceDocument: null, supplierReference: null, workOrderId: orderId, observation: "Devolución de asignación de orden" }, actorId);
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
