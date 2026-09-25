@@ -45,6 +45,12 @@ El proyecto se despliega bajo una arquitectura desacoplada de **dos proyectos in
 4. **Despliegues y Registros Independientes:** Se pueden consultar logs de ejecución, diagnósticos de errores y estados de build de cada capa por separado.
 5. **Costo Cero:** Ambos proyectos se ejecutan dentro del plan gratuito de Vercel.
 
+### Determinismo del Entorno Node.js (Node 24.x)
+Tanto `backend/` como `frontend/` estandarizan la versión del entorno en **Node 24.x**:
+- `backend/package.json` y `frontend/package.json`: `"engines": { "node": "24.x" }`.
+- `backend/Dockerfile` y `frontend/Dockerfile`: imagen base `node:24-alpine`.
+- En Vercel: La configuración del proyecto utilizará Node.js 24.x automáticamente respetando la directiva `engines`.
+
 ---
 
 ## 2. Base de Datos: Supabase Cloud & Connection Pooling
@@ -56,11 +62,11 @@ El proyecto se despliega bajo una arquitectura desacoplada de **dos proyectos in
 * **Fail-Fast en Producción:** Si el backend inicia con `NODE_ENV=production` y `DATABASE_URL` no está definida, el servidor lanza inmediatamente un error explícito y **no realiza fallback a localhost ni a Docker**.
 * **Configuración del Pool (`pg.Pool`):**
   * Reutilización global a nivel de módulo en contenedores calientes (`warm containers`).
-  * `max`: 5 conexiones máximas por instancia serverless (ajustable con `DB_POOL_MAX`).
+  * `max`: **1 conexión máxima por instancia serverless en producción** (default: `1`, configurable mediante `DB_POOL_MAX`; en desarrollo local el default es `10`). En entornos serverless como Vercel donde las funciones escalan horizontalmente manejando una solicitud concurrente por contenedor, dimensionar el pool a `1` previene la saturación del pooler de Supabase (Supavisor) o de PostgreSQL en el tier gratuito sin degradar el throughput.
   * `connectionTimeoutMillis`: 10,000 ms (10s) para evitar bloqueos por latencia de red.
   * `idleTimeoutMillis`: 30,000 ms (30s) para liberar rápidamente conexiones ociosas hacia Supavisor.
   * `allowExitOnIdle: true` para que los procesos serverless inactivos finalicen de forma limpia.
-* **Desarrollo Local:** Se conserva intacto el uso de PostgreSQL local con Docker Compose (`docker-compose.local.yml`) o conexión a Supabase según las variables locales.
+* **Desarrollo Local:** Se conserva intacto el uso de PostgreSQL local con Docker Compose (`docker-compose.local.yml`) con un pool por defecto de 10 conexiones o conexión a Supabase según las variables locales.
 
 ---
 
@@ -125,7 +131,7 @@ El proyecto se despliega bajo una arquitectura desacoplada de **dos proyectos in
 | `DATABASE_URL` | Connection string de PostgreSQL en Supabase (Pooler) | **SÍ** | `postgresql://postgres.xxx:PASSWORD@aws-0-xx.pooler.supabase.com:6543/postgres` |
 | `DB_SSL` | Habilitar conexión SSL con PostgreSQL | NO | `true` |
 | `DB_SSL_REJECT_UNAUTHORIZED` | Validación de certificados SSL en Supabase | NO | `false` (o `true` con CA) |
-| `DB_POOL_MAX` | Conexiones máximas por instancia serverless | NO | `5` |
+| `DB_POOL_MAX` | Conexiones máximas por instancia serverless (default producción: `1`, local: `10`) | NO | `1` |
 | `DB_CONNECTION_TIMEOUT_MS` | Timeout de conexión a la base de datos | NO | `10000` |
 | `DB_IDLE_TIMEOUT_MS` | Timeout de liberación de conexiones ociosas | NO | `30000` |
 | `SUPABASE_URL` | URL del proyecto Supabase Cloud | NO | `https://abcdefghijkl.supabase.co` |
@@ -133,7 +139,8 @@ El proyecto se despliega bajo una arquitectura desacoplada de **dos proyectos in
 | `SUPABASE_SERVICE_ROLE_KEY` | Llave administrativa de servicio de Supabase | **SÍ** | `eyJhbGciOi...` |
 | `FRONTEND_URL` | URL del frontend permitida en CORS | NO | `https://sistema-motores-frontend.vercel.app` |
 | `CORS_ORIGINS` | Lista opcional de orígenes permitidos separados por coma | NO | `https://frontend.vercel.app,http://localhost:3000` |
-| `ALLOW_VERCEL_PREVIEWS` | Permitir solicitudes desde dominios `*.vercel.app` de preview | NO | `true` o `false` |
+| `ALLOW_VERCEL_PREVIEWS` | Habilitar solicitudes de preview deployments de Vercel (default: `false`) | NO | `false` o `true` |
+| `VERCEL_PREVIEW_PROJECT_NAME` | Nombre del proyecto Vercel para acotar previews si `ALLOW_VERCEL_PREVIEWS=true` | NO | `sistema-reconstruccion-motores` |
 | `NODE_ENV` | Entorno de ejecución (gestionado automáticamente por Vercel) | NO | `production` |
 
 > [!CAUTION]
@@ -179,24 +186,51 @@ El proyecto se despliega bajo una arquitectura desacoplada de **dos proyectos in
    * `DATABASE_URL`: (Connection string de Supabase Pooler)
    * `DB_SSL`: `true`
    * `DB_SSL_REJECT_UNAUTHORIZED`: `false`
-   * `DB_POOL_MAX`: `5`
+   * `DB_POOL_MAX`: `1` (recomendado en producción; default interno es 1)
    * `SUPABASE_URL`: (URL del proyecto Supabase)
    * `SUPABASE_ANON_KEY`: (Anon key)
    * `SUPABASE_SERVICE_ROLE_KEY`: (Service role key)
    * `FRONTEND_URL`: `https://<temporal-o-esperado-frontend>.vercel.app` (se puede actualizar tras el paso 2)
-   * `ALLOW_VERCEL_PREVIEWS`: `true`
+   * `ALLOW_VERCEL_PREVIEWS`: `false` (o `true` si se define `VERCEL_PREVIEW_PROJECT_NAME`)
+   * `VERCEL_PREVIEW_PROJECT_NAME`: `sistema-reconstruccion-motores`
 8. En **Production Branch**, seleccionar:
    ```
    develop
    ```
 9. Pulsar **Deploy**.
 10. Una vez completado, copiar el dominio asignado (ej. `https://sistema-motores-backend.vercel.app`).
-11. Probar el endpoint de salud desde el navegador:
-    ```
-    https://sistema-motores-backend.vercel.app/health
-    https://sistema-motores-backend.vercel.app/api/health
-    ```
-    Respuesta esperada: `{"status":"UP","service":"sistema-reconstruccion-motores","database":"connected"}`.
+11. Probar los endpoints de salud desde el navegador o mediante `curl`:
+    * **Liveness Probe (Verificación de vida del proceso Express, sin tocar PostgreSQL):**
+      ```
+      GET https://sistema-motores-backend.vercel.app/health
+      ```
+      Respuesta esperada (HTTP 200):
+      ```json
+      {
+        "status": "UP",
+        "service": "sistema-reconstruccion-motores"
+      }
+      ```
+    * **Readiness Probe (Verificación de conectividad con la base de datos PostgreSQL):**
+      ```
+      GET https://sistema-motores-backend.vercel.app/api/health
+      ```
+      Respuesta esperada con base conectada (HTTP 200):
+      ```json
+      {
+        "status": "UP",
+        "service": "sistema-reconstruccion-motores",
+        "database": "connected"
+      }
+      ```
+      Respuesta en caso de desconexión de la base (HTTP 503):
+      ```json
+      {
+        "status": "DEGRADED",
+        "service": "sistema-reconstruccion-motores",
+        "database": "disconnected"
+      }
+      ```
 
 ---
 
