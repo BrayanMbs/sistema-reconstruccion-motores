@@ -24,7 +24,7 @@ const navigation = [
 
 export function AdminShell({ children }: PropsWithChildren) {
   const router = useRouter(); const pathname = usePathname(); const [user, setUser] = useState<AppUser | null>(null); const [checking, setChecking] = useState(true);
-  useEffect(() => { const verify = async () => { try { const supabase = getSupabase(); if (!supabase) throw new Error("SUPABASE_NOT_CONFIGURED"); const { data } = await supabase.auth.getSession(); if (!data.session) throw new Error("NO_SESSION"); const result = await apiRequest<{ user: AppUser }>("/api/auth/me"); if (result.user.role !== "ADMIN") { router.replace(roleHome(result.user.role)); return; } setUser(result.user); } catch { await getSupabase()?.auth.signOut(); router.replace("/login"); } finally { setChecking(false); } }; void verify(); }, [router]);
+  useEffect(() => { const verify = async () => { try { const supabase = getSupabase(); if (!supabase) throw new Error("SUPABASE_NOT_CONFIGURED"); const { data } = await supabase.auth.getSession(); if (!data.session) throw new Error("NO_SESSION"); const result = await apiRequest<{ user: AppUser }>("/api/auth/me"); if (result.user.mustChangePassword) { router.replace("/cambiar-contrasena"); return; } if (result.user.role !== "ADMIN") { router.replace(roleHome(result.user.role)); return; } setUser(result.user); } catch { await getSupabase()?.auth.signOut(); router.replace("/login"); } finally { setChecking(false); } }; void verify(); }, [router]);
   const signOut = async () => { await getSupabase()?.auth.signOut(); router.replace("/login"); };
   if (checking) return <main className="flex min-h-screen items-center justify-center text-slate-500">Validando acceso administrativo...</main>;
   if (!user) return null;
