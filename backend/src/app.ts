@@ -5,37 +5,40 @@ import { getLiveness } from "./controllers/health.controller";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
 import { apiRouter } from "./routes";
 
-export const app = express();
-
-app.set("trust proxy", 1);
-
-const isVercelPreviewOrigin = (origin: string): boolean => {
-  if (!env.allowVercelPreviews || !env.vercelPreviewProject) {
+export const isVercelPreviewOrigin = (
+  origin: string,
+  allowPreviews: boolean = env.allowVercelPreviews,
+  projectName?: string
+): boolean => {
+  const targetProject = projectName ?? env.vercelPreviewProject;
+  if (!allowPreviews || !targetProject) {
     return false;
   }
-  const escapedProject = env.vercelPreviewProject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const previewRegex = new RegExp(`^https:\\/\\/${escapedProject}(-[a-zA-Z0-9_-]+)?\\.vercel\\.app$`);
-  return previewRegex.test(origin);
+  const escapedProject = targetProject.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const previewRegex = new RegExp(`^https:\\/\\/${escapedProject}(-[a-zA-Z0-9-]+)?\\.vercel\\.app$`, "i");
+  return previewRegex.test(origin.trim().replace(/\/+$/, ""));
 };
 
-const corsOptions: CorsOptions = {
+export const buildCorsOptions = (currentEnv = env): CorsOptions => ({
   origin: (origin, callback) => {
     if (!origin) {
       callback(null, true);
       return;
     }
 
-    if (env.corsOrigins.includes(origin)) {
+    const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+
+    if (currentEnv.corsOrigins.includes(normalizedOrigin)) {
       callback(null, true);
       return;
     }
 
-    if (isVercelPreviewOrigin(origin)) {
+    if (isVercelPreviewOrigin(normalizedOrigin, currentEnv.allowVercelPreviews, currentEnv.vercelPreviewProject)) {
       callback(null, true);
       return;
     }
 
-    if (!env.isProduction && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+    if (!currentEnv.isProduction && /^http:\/\/localhost(:\d+)?$/i.test(normalizedOrigin)) {
       callback(null, true);
       return;
     }
@@ -45,15 +48,22 @@ const corsOptions: CorsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
+});
+
+export const createApp = (currentEnv = env) => {
+  const expressApp = express();
+  expressApp.set("trust proxy", 1);
+  expressApp.use(cors(buildCorsOptions(currentEnv)));
+  expressApp.use(express.json());
+
+  expressApp.get("/health", getLiveness);
+  expressApp.use("/api", apiRouter);
+  expressApp.use(notFoundHandler);
+  expressApp.use(errorHandler);
+
+  return expressApp;
 };
 
-app.use(cors(corsOptions));
-app.use(express.json());
-
-app.get("/health", getLiveness);
-app.use("/api", apiRouter);
-app.use(notFoundHandler);
-app.use(errorHandler);
-
+export const app = createApp();
 export default app;
 
