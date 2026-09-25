@@ -16,6 +16,7 @@ export const requireAuthentication = async (request: Request, _response: Respons
 
 export const requireRole = (...allowedRoles: Role[]) => (request: Request, _response: Response, next: NextFunction): void => {
   if (!request.appUser) { next(new AppError("Se requiere una sesión válida", 401, "AUTH_REQUIRED")); return; }
+  if (request.appUser.mustChangePassword) { next(new AppError("Debes cambiar tu contraseña temporal para continuar", 403, "PASSWORD_CHANGE_REQUIRED")); return; }
   if (!allowedRoles.includes(request.appUser.role)) { next(new AppError("No tienes permiso para este recurso", 403, "INSUFFICIENT_ROLE")); return; }
   next();
 };

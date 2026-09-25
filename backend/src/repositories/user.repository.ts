@@ -1,4 +1,4 @@
-import type { QueryResultRow } from "pg";
+import type { PoolClient, QueryResultRow } from "pg";
 import { databasePool } from "../config/database";
 import type { AppUser, Role } from "../models/domain";
 
@@ -8,6 +8,7 @@ const mapUser = (row: QueryResultRow): AppUser => ({
   email: row.email,
   role: row.role,
   isActive: row.is_active,
+  mustChangePassword: row.must_change_password,
   createdAt: row.created_at,
   updatedAt: row.updated_at
 });
@@ -65,6 +66,14 @@ export class UserRepository {
     const result = await databasePool.query(
       `UPDATE app_users SET ${fields.join(", ")}, updated_at = now() WHERE id = $${values.length} RETURNING *`,
       values
+    );
+    return result.rowCount ? mapUser(result.rows[0]) : null;
+  }
+
+  async setMustChangePassword(id: string, mustChangePassword: boolean, client?: PoolClient): Promise<AppUser | null> {
+    const result = await (client ?? databasePool).query(
+      "UPDATE app_users SET must_change_password = $2, updated_at = now() WHERE id = $1 RETURNING *",
+      [id, mustChangePassword]
     );
     return result.rowCount ? mapUser(result.rows[0]) : null;
   }
