@@ -21,7 +21,7 @@ const order = (status: WorkOrderStatus, assigned: boolean): WorkOrder => ({
 const mockDetail = (status: WorkOrderStatus, assigned: boolean) => {
   const workOrder = order(status, assigned);
   apiRequestMock.mockImplementation((path: string) => {
-    if (path.endsWith("/history")) return Promise.resolve({ items: [] });
+    if (path.endsWith("/timeline")) return Promise.resolve({ items: [] });
     if (path === "/api/administrativo/operators") return Promise.resolve({ items: [] });
     return Promise.resolve({ order: workOrder });
   });
