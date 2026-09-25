@@ -75,6 +75,8 @@ export type PublicOrderTracking = {
 };
 
 export type WorkOrderEvent = { id: string; workOrderId: string; actorName: string | null; eventType: string; message: string; progress: number | null; createdAt: string };
+export type OrderTimelineEventType = "ORDER_CREATED" | "ORDER_ASSIGNED" | "ORDER_REASSIGNED" | "WORK_STARTED" | "PROGRESS_UPDATED" | "INVENTORY_CONSUMED" | "INVENTORY_RETURNED" | "WORK_COMPLETED";
+export type OrderTimelineEvent = { id: string; type: OrderTimelineEventType; title: string; description: string | null; occurredAt: string; actor: { id: string; name: string } | null; progress: number | null };
 export type OperatorNotification = { id: string; workOrderId: string | null; workOrderCode: string | null; type: string; message: string; readAt: string | null; createdAt: string };
 
 export type InventoryItemType = "PART" | "MATERIAL" | "TOOL" | "CONSUMABLE";

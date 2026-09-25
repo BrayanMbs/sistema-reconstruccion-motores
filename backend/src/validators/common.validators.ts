@@ -10,6 +10,12 @@ export const requireText = (value: unknown, field: string, maxLength = 255): str
   return value.trim();
 };
 
+export const requireUuid = (value: unknown, field: string): string => {
+  const id = requireText(value, field, 36);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) throw new AppError(`${field} no es válido`, 422, "VALIDATION_ERROR");
+  return id;
+};
+
 export const optionalText = (value: unknown, field: string, maxLength = 1000): string | null => {
   if (value === undefined || value === null || value === "") return null;
   return requireText(value, field, maxLength);

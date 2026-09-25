@@ -3,13 +3,15 @@ import type { WorkOrder } from "../models/domain";
 import { OperationalRepository, OperatorNotificationRepository } from "../repositories/operational.repository";
 import { AppError } from "../utils/app-error";
 import { AuditService } from "./audit.service";
+import { OrderTimelineService } from "./order-timeline.service";
 
 export class OperationalService {
-  private readonly repository = new OperationalRepository(); private readonly notifications = new OperatorNotificationRepository(); private readonly audit = new AuditService();
+  private readonly repository = new OperationalRepository(); private readonly notifications = new OperatorNotificationRepository(); private readonly audit = new AuditService(); private readonly timelineService = new OrderTimelineService();
   dashboard(workerId: string) { return this.repository.dashboard(workerId); }
   listOrders(workerId: string, filters: { search?: string; status?: string; priority?: string; date?: string; page: number; limit: number }) { return this.repository.listOrders(workerId, filters); }
   async order(workerId: string, orderId: string) { const order = await this.repository.findOwnedOrder(workerId, orderId); if (order) return order; throw new AppError("No tienes acceso a esta orden", 403, "ORDER_NOT_OWNED"); }
   history(workerId: string, orderId: string) { return this.order(workerId, orderId).then(() => this.repository.events(workerId, orderId)); }
+  timeline(workerId: string, orderId: string) { return this.order(workerId, orderId).then(() => this.timelineService.list(orderId)); }
   activity(workerId: string) { return this.repository.events(workerId); }
   notificationsFor(workerId: string) { return this.notifications.list(workerId); }
   async markNotificationRead(workerId: string, id: string) { if (!await this.notifications.markRead(workerId, id)) throw new AppError("Notificación no encontrada", 404, "NOTIFICATION_NOT_FOUND"); }
