@@ -1,12 +1,77 @@
 "use client";
-import Link from "next/link";
+
 import { usePathname, useRouter } from "next/navigation";
 import { type PropsWithChildren, useEffect, useState } from "react";
-import { Icon, type IconName } from "@/shared/components/icon";
+import {
+  PrivateNavigation,
+  type PrivateNavigationItem
+} from "@/modules/auth/components/private-navigation";
 import type { AppUser } from "@/shared/models/admin";
 import { apiRequest } from "@/shared/services/api";
 import { getSupabase } from "@/shared/services/supabase";
 import { roleHome } from "@/shared/utils/role-home";
 
-const navigation = [{ href: "/inventario", label: "Inventario", icon: "dashboard" }, { href: "/inventario/productos", label: "Repuestos y materiales", icon: "inventory" }, { href: "/inventario/historial", label: "Historial de inventario", icon: "history" }] satisfies ReadonlyArray<{ href: string; label: string; icon: IconName }>;
-export function InventoryShell({ children }: PropsWithChildren) { const router = useRouter(); const path = usePathname(); const [user, setUser] = useState<AppUser | null>(null); const [checking, setChecking] = useState(true); const [open, setOpen] = useState(false); useEffect(() => { const check = async () => { try { const session = await getSupabase()?.auth.getSession(); if (!session?.data.session) throw new Error("NO_SESSION"); const result = await apiRequest<{ user: AppUser }>("/api/auth/me"); if (result.user.mustChangePassword) { router.replace("/cambiar-contrasena"); return; } if (result.user.role !== "INVENTORY" && result.user.role !== "ADMIN") { router.replace(roleHome(result.user.role)); return; } setUser(result.user); } catch { await getSupabase()?.auth.signOut(); router.replace("/login"); } finally { setChecking(false); } }; void check(); }, [router]); const signOut = async () => { await getSupabase()?.auth.signOut(); router.replace("/login"); }; if (checking) return <main className="flex min-h-screen items-center justify-center text-slate-500">Validando acceso a inventario...</main>; if (!user) return null; const links = <nav className="flex-1 space-y-1 px-3">{navigation.map((item) => <Link key={item.href} onClick={() => setOpen(false)} href={item.href} className={`flex items-center gap-3 rounded-lg border-l-4 px-4 py-3 text-sm ${path === item.href ? "border-blue-500 bg-white/15 font-bold text-white" : "border-transparent text-slate-300 hover:bg-white/10 hover:text-white"}`}><Icon name={item.icon} />{item.label}</Link>)}</nav>; return <div className="min-h-screen bg-[#f7f9fb]"><aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col bg-[#16324f] py-6 lg:flex"><div className="mb-8 flex items-center gap-3 px-6"><div className="flex size-10 items-center justify-center rounded-lg bg-blue-600 text-white"><Icon name="inventory" /></div><div><p className="text-xl font-bold text-white">Motor Repair</p><p className="text-xs text-slate-300">Inventario</p></div></div>{links}<button className="mx-4 flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-slate-300 hover:bg-white/10" onClick={() => void signOut()}><Icon name="logout" />Cerrar sesión</button></aside>{open && <div className="fixed inset-0 z-40 lg:hidden"><button aria-label="Cerrar menú" className="absolute inset-0 bg-slate-950/50" onClick={() => setOpen(false)} /><aside className="relative z-10 flex h-full w-72 flex-col bg-[#16324f] py-6"><div className="mb-8 px-6 text-white"><strong>Motor Repair</strong><p className="text-xs text-slate-300">Inventario</p></div>{links}</aside></div>}<header className="fixed inset-x-0 top-0 z-10 flex h-16 items-center justify-between border-b border-slate-300 bg-white px-5 shadow-sm lg:left-[260px]"><div className="flex items-center gap-3"><button className="rounded p-2 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú" onClick={() => setOpen(true)}><Icon name="menu" /></button><strong>Gestión de Inventario</strong></div><div className="text-right text-sm"><strong className="block">{user.fullName}</strong><small className="text-slate-500">{user.role === "ADMIN" ? "Administrador" : "Encargado de inventario"}</small></div></header><main className="min-h-screen p-5 pt-24 lg:ml-[260px] lg:p-6 lg:pt-24">{children}</main></div>; }
+const navigation = [
+  { href: "/inventario", label: "Inventario", icon: "dashboard", exact: true },
+  { href: "/inventario/productos", label: "Repuestos y materiales", icon: "inventory" },
+  { href: "/inventario/historial", label: "Historial de inventario", icon: "history" }
+] satisfies ReadonlyArray<PrivateNavigationItem>;
+
+export function InventoryShell({ children }: PropsWithChildren) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const session = await getSupabase()?.auth.getSession();
+        if (!session?.data.session) throw new Error("NO_SESSION");
+
+        const result = await apiRequest<{ user: AppUser }>("/api/auth/me");
+        if (result.user.mustChangePassword) {
+          router.replace("/cambiar-contrasena");
+          return;
+        }
+        if (result.user.role !== "INVENTORY" && result.user.role !== "ADMIN") {
+          router.replace(roleHome(result.user.role));
+          return;
+        }
+        setUser(result.user);
+      } catch {
+        await getSupabase()?.auth.signOut();
+        router.replace("/login");
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    void verify();
+  }, [router]);
+
+  const signOut = async () => {
+    await getSupabase()?.auth.signOut();
+    router.replace("/login");
+  };
+
+  if (checking) {
+    return <main className="flex min-h-screen items-center justify-center text-slate-500">Validando acceso a inventario...</main>;
+  }
+  if (!user) return null;
+
+  return (
+    <PrivateNavigation
+      pathname={pathname}
+      user={user}
+      title="Gestión de Inventario"
+      roleLabel={user.role === "ADMIN" ? "Administrador" : "Encargado de inventario"}
+      drawerLabel="Navegación de inventario"
+      navigation={navigation}
+      onSignOut={signOut}
+      brandIcon="inventory"
+    >
+      {children}
+    </PrivateNavigation>
+  );
+}
