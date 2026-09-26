@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "menu", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility"] as const;
+const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "menu", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility", "visibility_off"] as const;
 
 export type IconName = (typeof iconNames)[number];
 
@@ -32,7 +32,8 @@ const paths: Record<IconName, string> = {
   settings: "M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5zM19.4 13.5a7.7 7.7 0 0 0 .1-1.5 7.7 7.7 0 0 0-.1-1.5l2-1.55-2-3.46-2.35.95a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.35 2.94a7.8 7.8 0 0 0-2.6 1.5L4.8 5.49l-2 3.46 2 1.55A7.7 7.7 0 0 0 4.7 12c0 .51.04 1.01.1 1.5l-2 1.55 2 3.46 2.35-.95a7.8 7.8 0 0 0 2.6 1.5L10.1 22h4l.35-2.94a7.8 7.8 0 0 0 2.6-1.5l2.35.95 2-3.46-2-1.55z",
   shield: "M12 3 5 6v5c0 4.6 3 8.7 7 10 4-1.3 7-5.4 7-10V6l-7-3zM9 12l2 2 4-4",
   tag: "M4 4h7l9 9-7 7-9-9V4zM8 8h.01",
-  visibility: "M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+  visibility: "M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  visibility_off: "M3 3l18 18M10.6 10.6A2 2 0 0 0 13.4 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c6.1 0 9.5 7 9.5 7a17.6 17.6 0 0 1-3.1 4.2M6.2 6.2C3.9 8.1 2.5 12 2.5 12S5.9 19 12 19c1.2 0 2.3-.3 3.3-.7"
 };
 
 export function Icon({ name, className = "", ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {
