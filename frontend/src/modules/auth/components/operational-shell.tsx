@@ -2,20 +2,97 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
+import {
+  PrivateNavigation,
+  type PrivateNavigationItem
+} from "@/modules/auth/components/private-navigation";
+import { Icon } from "@/shared/components/icon";
 import type { AppUser } from "@/shared/models/admin";
-import { Icon, type IconName } from "@/shared/components/icon";
 import { apiRequest } from "@/shared/services/api";
 import { getSupabase } from "@/shared/services/supabase";
 import { roleHome } from "@/shared/utils/role-home";
 
-const navigation = [{ href: "/operativo/inicio", label: "Inicio", icon: "dashboard" }, { href: "/operativo/ordenes", label: "Mis órdenes asignadas", icon: "engineering" }, { href: "/operativo/actividad", label: "Mi actividad", icon: "history" }, { href: "/operativo/notificaciones", label: "Notificaciones", icon: "history_edu" }] satisfies ReadonlyArray<{ href: string; label: string; icon: IconName }>;
+const navigation = [
+  { href: "/operativo/inicio", label: "Inicio", icon: "dashboard", exact: true },
+  { href: "/operativo/ordenes", label: "Mis órdenes asignadas", icon: "engineering" },
+  { href: "/operativo/actividad", label: "Mi actividad", icon: "history" },
+  { href: "/operativo/notificaciones", label: "Notificaciones", icon: "history_edu" }
+] satisfies ReadonlyArray<PrivateNavigationItem>;
 
 export function OperationalShell({ children }: PropsWithChildren) {
-  const router = useRouter(); const pathname = usePathname(); const [user, setUser] = useState<AppUser | null>(null); const [checking, setChecking] = useState(true);
-  useEffect(() => { const verify = async () => { try { const session = await getSupabase()?.auth.getSession(); if (!session?.data.session) throw new Error("NO_SESSION"); const result = await apiRequest<{ user: AppUser }>("/api/auth/me"); if (result.user.mustChangePassword) { router.replace("/cambiar-contrasena"); return; } if (result.user.role !== "OPERATOR") { router.replace(roleHome(result.user.role)); return; } setUser(result.user); } catch { await getSupabase()?.auth.signOut(); router.replace("/login"); } finally { setChecking(false); } }; void verify(); }, [router]);
-  const signOut = async () => { await getSupabase()?.auth.signOut(); router.replace("/login"); };
-  if (checking) return <main className="flex min-h-screen items-center justify-center text-slate-500">Validando acceso operativo...</main>;
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const session = await getSupabase()?.auth.getSession();
+        if (!session?.data.session) throw new Error("NO_SESSION");
+
+        const result = await apiRequest<{ user: AppUser }>("/api/auth/me");
+        if (result.user.mustChangePassword) {
+          router.replace("/cambiar-contrasena");
+          return;
+        }
+        if (result.user.role !== "OPERATOR") {
+          router.replace(roleHome(result.user.role));
+          return;
+        }
+        setUser(result.user);
+      } catch {
+        await getSupabase()?.auth.signOut();
+        router.replace("/login");
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    void verify();
+  }, [router]);
+
+  const signOut = async () => {
+    await getSupabase()?.auth.signOut();
+    router.replace("/login");
+  };
+
+  if (checking) {
+    return <main className="flex min-h-screen items-center justify-center text-slate-500">Validando acceso operativo...</main>;
+  }
   if (!user) return null;
-  return <div className="min-h-screen bg-[#f5f7fa] text-slate-900"><aside className="fixed inset-y-0 left-0 z-20 hidden w-[260px] flex-col bg-[#143656] py-6 md:flex"><div className="mb-9 flex items-center gap-3 px-6"><div className="flex size-9 items-center justify-center rounded-full bg-blue-600 text-white"><Icon name="engineering" /></div><strong className="text-xl text-white">Taller Motores</strong></div><nav className="flex-1 space-y-2 px-3">{navigation.map((item) => <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${pathname === item.href || (item.href === "/operativo/ordenes" && pathname.startsWith("/operativo/ordenes/")) ? "bg-[#2867e8] text-white" : "text-slate-200 hover:bg-white/10"}`}><Icon name={item.icon} />{item.label}</Link>)}</nav><div className="border-t border-white/15 px-4 pt-5"><div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-full bg-blue-600 font-bold text-white">{user.fullName.charAt(0).toUpperCase()}</div><div className="min-w-0 flex-1"><strong className="block truncate text-sm text-white">{user.fullName}</strong><span className="text-xs text-blue-200">Trabajador operativo</span></div><button aria-label="Cerrar sesión" onClick={() => void signOut()} className="text-blue-200 hover:text-white"><Icon name="logout" /></button></div></div></aside><header className="fixed inset-x-0 top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-5 md:left-[260px]"><div className="relative hidden w-full max-w-xl md:block"><Icon name="search" className="absolute left-3 top-2.5 text-slate-500" /><input className="h-10 w-full rounded-lg bg-slate-100 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-200" placeholder="Buscar órdenes, piezas, tareas..." /></div><Link href="/operativo/notificaciones" className="ml-auto rounded-full p-2 text-slate-600 hover:bg-slate-100" aria-label="Notificaciones"><Icon name="history_edu" /></Link><div className="ml-3 flex items-center gap-2"><div className="flex size-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">{user.fullName.charAt(0).toUpperCase()}</div><span className="hidden text-sm md:block"><strong className="block">{user.fullName}</strong><small className="text-slate-500">Trabajador operativo</small></span></div></header><main className="min-h-screen p-5 pt-24 md:ml-[260px] md:p-7 md:pt-24">{children}</main></div>;
+
+  return (
+    <PrivateNavigation
+      pathname={pathname}
+      user={user}
+      title="Portal Operativo"
+      roleLabel="Trabajador operativo"
+      drawerLabel="Navegación operativa"
+      navigation={navigation}
+      onSignOut={signOut}
+      brandIcon="engineering"
+      desktopHeaderContent={
+        <>
+          <div className="relative hidden w-full max-w-xl lg:block">
+            <Icon name="search" className="absolute left-3 top-2.5 text-slate-500" />
+            <input
+              className="h-10 w-full rounded-lg bg-slate-100 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Buscar órdenes, piezas, tareas..."
+            />
+          </div>
+          <Link
+            href="/operativo/notificaciones"
+            className="ml-auto hidden rounded-full p-2 text-slate-600 hover:bg-slate-100 lg:block"
+            aria-label="Notificaciones"
+          >
+            <Icon name="history_edu" />
+          </Link>
+        </>
+      }
+    >
+      {children}
+    </PrivateNavigation>
+  );
 }
