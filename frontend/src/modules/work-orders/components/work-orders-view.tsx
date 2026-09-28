@@ -7,6 +7,7 @@ import { StatusBadge } from "@/shared/components/status-badge";
 import { Icon } from "@/shared/components/icon";
 import { WorkOrderFilters, WorkOrderTable } from "./work-order-shared";
 import { OrderTimeline } from "./order-timeline";
+import { TrackingShareActions } from "@/modules/public-tracking/components/tracking-share-actions";
 
 type OrderForm = { clientId: string; engineBrand: string; engineModel: string; engineSerial: string; serviceType: string; description: string; intakeNotes: string; publicNote: string; estimatedDate: string; priority: "NORMAL" | "HIGH" | "URGENT" };
 const blankOrder: OrderForm = { clientId: "", engineBrand: "", engineModel: "", engineSerial: "", serviceType: "Diagnóstico", description: "", intakeNotes: "", publicNote: "", estimatedDate: "", priority: "NORMAL" };
@@ -23,7 +24,58 @@ export function WorkOrdersView() {
   </div>;
 }
 
-function OrderDetail({ order, close }: { order: WorkOrder; close: () => void }) { return <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/40 p-4"><article className="stitch-card max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6"><div className="flex justify-between"><div><p className="text-sm text-blue-700">{order.code}</p><h3 className="text-xl font-bold">Detalle de orden de trabajo</h3></div><button aria-label="Cerrar" onClick={close}><Icon name="close" /></button></div><div className="mt-5 grid gap-4 sm:grid-cols-2"><Info label="Cliente" value={order.clientName} /><Info label="Estado" value=""><StatusBadge status={order.status} /></Info><Info label="Motor" value={`${order.engineBrand} ${order.engineModel}`} /><Info label="Serie" value={order.engineSerial ?? "No registrada"} /><Info label="Servicio" value={order.serviceType} /><Info label="Trabajador asignado" value={order.assignedWorker ?? "Sin asignar"} /><Info label="Fecha estimada" value={order.estimatedDate ? formatDate(order.estimatedDate) : "No definida"} /><Info label="Avance" value={`${order.progress}%`} /><Info label="Total aprobado" value={typeof order.totalAmount === "number" ? `Q ${order.totalAmount.toFixed(2)}` : "Sin cotizar"} /></div><section className="mt-5 border-t border-slate-200 pt-4"><h4 className="font-semibold">Descripción del servicio</h4><p className="mt-1 text-sm text-slate-600">{order.description}</p>{order.intakeNotes && <><h4 className="mt-4 font-semibold">Notas de recepción</h4><p className="mt-1 text-sm text-slate-600">{order.intakeNotes}</p></>}{order.publicNote && <><h4 className="mt-4 font-semibold text-blue-700">Nota para seguimiento</h4><p className="mt-1 text-sm text-slate-600">{order.publicNote}</p></>}</section><OrderTimeline endpoint={`/api/admin/work-orders/${order.id}/timeline`} /></article></div>; }
+function OrderDetail({ order, close }: { order: WorkOrder; close: () => void }) {
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/40 p-4">
+      <article className="stitch-card max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6">
+        <div className="flex justify-between">
+          <div>
+            <p className="text-sm text-blue-700">{order.code}</p>
+            <h3 className="text-xl font-bold">Detalle de orden de trabajo</h3>
+          </div>
+          <button aria-label="Cerrar" onClick={close}><Icon name="close" /></button>
+        </div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Info label="Cliente" value={order.clientName} />
+          <Info label="Estado" value=""><StatusBadge status={order.status} /></Info>
+          <Info label="Motor" value={`${order.engineBrand} ${order.engineModel}`} />
+          <Info label="Serie" value={order.engineSerial ?? "No registrada"} />
+          <Info label="Servicio" value={order.serviceType} />
+          <Info label="Trabajador asignado" value={order.assignedWorker ?? "Sin asignar"} />
+          <Info label="Fecha estimada" value={order.estimatedDate ? formatDate(order.estimatedDate) : "No definida"} />
+          <Info label="Avance" value={`${order.progress}%`} />
+          <Info label="Total aprobado" value={typeof order.totalAmount === "number" ? `Q ${order.totalAmount.toFixed(2)}` : "Sin cotizar"} />
+        </div>
+        <section className="mt-5 border-t border-slate-200 pt-4">
+          <h4 className="font-semibold">Descripción del servicio</h4>
+          <p className="mt-1 text-sm text-slate-600">{order.description}</p>
+          {order.intakeNotes && <><h4 className="mt-4 font-semibold">Notas de recepción</h4><p className="mt-1 text-sm text-slate-600">{order.intakeNotes}</p></>}
+          {order.publicNote && <><h4 className="mt-4 font-semibold text-blue-700">Nota para seguimiento</h4><p className="mt-1 text-sm text-slate-600">{order.publicNote}</p></>}
+        </section>
+        <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-col gap-2 border-b border-slate-200 pb-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="font-bold text-slate-900">Seguimiento del cliente</h4>
+              <p className="text-xs text-slate-500">
+                Código de seguimiento: <code className="select-all font-mono font-bold text-slate-900">{order.trackingCode}</code>
+              </p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <TrackingShareActions
+              orderNumber={order.code}
+              trackingCode={order.trackingCode}
+              clientId={order.clientId}
+              clientName={order.clientName}
+            />
+          </div>
+        </section>
+        <OrderTimeline endpoint={`/api/admin/work-orders/${order.id}/timeline`} />
+      </article>
+    </div>
+  );
+}
+
 function OrderOperationsDialog({ order, close, completed }: { order: WorkOrder; close: () => void; completed: () => void }) {
   const [operators, setOperators] = useState<Operator[]>([]); const [inventory, setInventory] = useState<InventoryItem[]>([]); const [allocations, setAllocations] = useState<WorkOrderInventory[]>([]); const [workerId, setWorkerId] = useState(order.assignedWorkerId ?? ""); const [itemId, setItemId] = useState(""); const [quantity, setQuantity] = useState("1"); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { try { const [people, stock, used] = await Promise.all([apiRequest<{ items: Operator[] }>("/api/admin/operators"), apiRequest<{ items: InventoryItem[] }>("/api/admin/inventory"), apiRequest<{ items: WorkOrderInventory[] }>(`/api/admin/work-orders/${order.id}/inventory`)]); setOperators(people.items); setInventory(stock.items); setAllocations(used.items); } catch (caught) { setError((caught as Error).message); } }, [order.id]);
@@ -31,26 +83,276 @@ function OrderOperationsDialog({ order, close, completed }: { order: WorkOrder; 
   const assign = async () => { if (!workerId) return setError("Seleccione un trabajador operativo."); setSaving(true); try { await apiRequest(`/api/admin/work-orders/${order.id}/assignee`, { method: "PATCH", body: JSON.stringify({ workerId }) }); completed(); } catch (caught) { setError((caught as Error).message); } finally { setSaving(false); } };
   const allocate = async (event: FormEvent) => { event.preventDefault(); if (!itemId) return setError("Seleccione un insumo."); setSaving(true); try { await apiRequest(`/api/admin/work-orders/${order.id}/inventory`, { method: "POST", body: JSON.stringify({ inventoryItemId: itemId, quantity: Number(quantity) }) }); setItemId(""); setQuantity("1"); await load(); } catch (caught) { setError((caught as Error).message); } finally { setSaving(false); } };
   const release = async (inventoryItemId: string) => { try { await apiRequest(`/api/admin/work-orders/${order.id}/inventory/${inventoryItemId}`, { method: "DELETE" }); await load(); } catch (caught) { setError((caught as Error).message); } };
-  return <div className="fixed inset-0 z-30 overflow-y-auto bg-slate-950/40 p-4"><article className="stitch-card mx-auto my-5 w-full max-w-3xl p-6"><div className="flex justify-between gap-4"><div><p className="text-sm text-blue-700">{order.code}</p><h3 className="text-xl font-bold">Asignación y materiales</h3><p className="mt-1 text-sm text-slate-600">{order.clientName} · {order.engineBrand} {order.engineModel}</p><p className="mt-3 text-xs text-slate-500">Código para entregar al cliente: <code className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-800">{order.trackingCode}</code></p></div><button aria-label="Cerrar" onClick={close}><Icon name="close" /></button></div>{error && <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    <section className="mt-6 rounded-lg border border-slate-200 p-4"><h4 className="font-bold">Personal operativo asignado</h4><div className="mt-3 flex flex-col gap-3 sm:flex-row"><select className="stitch-input flex-1" value={workerId} onChange={(event) => setWorkerId(event.target.value)}><option value="">Seleccione un trabajador</option>{operators.map((operator) => <option key={operator.id} value={operator.id}>{operator.fullName} · {operator.activeOrders} órdenes activas</option>)}</select><button disabled={saving} className="stitch-button stitch-button-primary" onClick={() => void assign()}>Asignar técnico</button></div><p className="mt-2 text-xs text-slate-500">Actual: {order.assignedWorker ?? "Sin asignar"}</p></section>
-    <section className="mt-5 rounded-lg border border-slate-200 p-4"><h4 className="font-bold">Insumos de esta orden</h4><form onSubmit={allocate} className="mt-3 grid gap-3 sm:grid-cols-[1fr_120px_auto]"><select className="stitch-input" value={itemId} onChange={(event) => setItemId(event.target.value)}><option value="">Seleccione un artículo de inventario</option>{inventory.filter((item) => item.stockQuantity > 0).map((item) => <option key={item.id} value={item.id}>{item.sku} · {item.name} ({item.stockQuantity} {item.unit})</option>)}</select><input className="stitch-input" min="0.01" step="0.01" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} /><button disabled={saving} className="stitch-button stitch-button-primary">Agregar</button></form><div className="mt-4 overflow-x-auto"><table className="stitch-table min-w-0"><thead><tr><th>Artículo</th><th>Cantidad</th><th></th></tr></thead><tbody>{allocations.map((item) => <tr key={item.inventoryItemId}><td><strong>{item.name}</strong><small className="ml-2 text-slate-500">{item.sku}</small></td><td>{item.quantity} {item.unit}</td><td className="text-right"><button className="text-sm font-semibold text-red-700 hover:underline" onClick={() => void release(item.inventoryItemId)}>Quitar</button></td></tr>)}{!allocations.length && <tr><td colSpan={3} className="py-5 text-center text-sm text-slate-500">No hay insumos asignados todavía.</td></tr>}</tbody></table></div></section><OrderTimeline endpoint={`/api/admin/work-orders/${order.id}/timeline`} /></article></div>;
+  return (
+    <div className="fixed inset-0 z-30 overflow-y-auto bg-slate-950/40 p-4">
+      <article className="stitch-card mx-auto my-5 w-full max-w-3xl p-6">
+        <div className="flex justify-between gap-4">
+          <div>
+            <p className="text-sm text-blue-700">{order.code}</p>
+            <h3 className="text-xl font-bold">Asignación y materiales</h3>
+            <p className="mt-1 text-sm text-slate-600">{order.clientName} · {order.engineBrand} {order.engineModel}</p>
+          </div>
+          <button aria-label="Cerrar" onClick={close}><Icon name="close" /></button>
+        </div>
+        {error && <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-col gap-2 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h4 className="font-bold text-slate-900">Seguimiento del cliente</h4>
+              <p className="text-xs text-slate-500">Acceso rápido para compartir el avance público con el cliente.</p>
+            </div>
+            <div className="text-xs text-slate-600">
+              Código: <code className="select-all rounded border border-slate-200 bg-white px-2 py-0.5 font-mono font-bold text-slate-900">{order.trackingCode}</code>
+            </div>
+          </div>
+          <div className="mt-3">
+            <TrackingShareActions
+              orderNumber={order.code}
+              trackingCode={order.trackingCode}
+              clientId={order.clientId}
+              clientName={order.clientName}
+            />
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-lg border border-slate-200 p-4">
+          <h4 className="font-bold">Personal operativo asignado</h4>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <select className="stitch-input flex-1" value={workerId} onChange={(event) => setWorkerId(event.target.value)}>
+              <option value="">Seleccione un trabajador</option>
+              {operators.map((operator) => (
+                <option key={operator.id} value={operator.id}>{operator.fullName} · {operator.activeOrders} órdenes activas</option>
+              ))}
+            </select>
+            <button disabled={saving} className="stitch-button stitch-button-primary" onClick={() => void assign()}>Asignar técnico</button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Actual: {order.assignedWorker ?? "Sin asignar"}</p>
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 p-4">
+          <h4 className="font-bold">Insumos de esta orden</h4>
+          <form onSubmit={allocate} className="mt-3 grid gap-3 sm:grid-cols-[1fr_120px_auto]">
+            <select className="stitch-input" value={itemId} onChange={(event) => setItemId(event.target.value)}>
+              <option value="">Seleccione un artículo de inventario</option>
+              {inventory.filter((item) => item.stockQuantity > 0).map((item) => (
+                <option key={item.id} value={item.id}>{item.sku} · {item.name} ({item.stockQuantity} {item.unit})</option>
+              ))}
+            </select>
+            <input className="stitch-input" min="0.01" step="0.01" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+            <button disabled={saving} className="stitch-button stitch-button-primary">Agregar</button>
+          </form>
+          <div className="mt-4 overflow-x-auto">
+            <table className="stitch-table min-w-0">
+              <thead><tr><th>Artículo</th><th>Cantidad</th><th></th></tr></thead>
+              <tbody>
+                {allocations.map((item) => (
+                  <tr key={item.inventoryItemId}>
+                    <td><strong>{item.name}</strong><small className="ml-2 text-slate-500">{item.sku}</small></td>
+                    <td>{item.quantity} {item.unit}</td>
+                    <td className="text-right">
+                      <button className="text-sm font-semibold text-red-700 hover:underline" onClick={() => void release(item.inventoryItemId)}>Quitar</button>
+                    </td>
+                  </tr>
+                ))}
+                {!allocations.length && <tr><td colSpan={3} className="py-5 text-center text-sm text-slate-500">No hay insumos asignados todavía.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <OrderTimeline endpoint={`/api/admin/work-orders/${order.id}/timeline`} />
+      </article>
+    </div>
+  );
 }
 
 function Info({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) { return <div><p className="text-xs text-slate-500">{label}</p>{children ?? <p className="mt-1 text-sm font-medium">{value}</p>}</div>; }
 
 function OrderWizard({ close, completed }: { close: () => void; completed: () => void }) {
-  const [step, setStep] = useState(1); const [clients, setClients] = useState<Client[]>([]); const [form, setForm] = useState<OrderForm>(blankOrder); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
-  useEffect(() => { void apiRequest<Paginated<Client>>("/api/admin/clients?limit=100").then((result) => setClients(result.items)).catch((caught: Error) => setError(caught.message)); }, []);
+  const [step, setStep] = useState(1);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [form, setForm] = useState<OrderForm>(blankOrder);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [created, setCreated] = useState<WorkOrder | null>(null);
+
+  useEffect(() => {
+    void apiRequest<Paginated<Client>>("/api/admin/clients?limit=100")
+      .then((result) => setClients(result.items))
+      .catch((caught: Error) => setError(caught.message));
+  }, []);
+
   const set = (key: keyof OrderForm, value: string) => setForm({ ...form, [key]: value });
-  const advance = () => { if (step === 1 && !form.clientId) setError("Selecciona un cliente para continuar."); else if (step === 2 && (!form.engineBrand || !form.engineModel)) setError("Completa la marca y modelo del motor."); else if (step === 3 && (!form.serviceType || !form.description)) setError("Completa el servicio y la descripción."); else { setError(""); setStep(step + 1); } };
-  const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); try { await apiRequest("/api/admin/work-orders", { method: "POST", body: JSON.stringify(form) }); completed(); } catch (caught) { setError((caught as Error).message); } finally { setSaving(false); } };
+  const advance = () => {
+    if (step === 1 && !form.clientId) setError("Selecciona un cliente para continuar.");
+    else if (step === 2 && (!form.engineBrand || !form.engineModel)) setError("Completa la marca y modelo del motor.");
+    else if (step === 3 && (!form.serviceType || !form.description)) setError("Completa el servicio y la descripción.");
+    else { setError(""); setStep(step + 1); }
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const result = await apiRequest<{ order: WorkOrder }>("/api/admin/work-orders", {
+        method: "POST",
+        body: JSON.stringify(form)
+      });
+      setCreated(result.order);
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const client = clients.find((item) => item.id === form.clientId);
-  return <div className="fixed inset-0 z-30 overflow-y-auto bg-slate-950/40 p-4"><form onSubmit={submit} className="stitch-card mx-auto my-6 w-full max-w-4xl p-6"><div className="flex justify-between gap-4"><div><h3 className="text-2xl font-bold">{step === 4 ? "Revisar y confirmar orden" : "Crear nueva orden de trabajo"}</h3><p className="mt-1 text-sm text-slate-600">Completa los pasos para registrar una nueva reparación.</p></div><button type="button" onClick={close} aria-label="Cerrar"><Icon name="close" /></button></div><div className="mt-5 grid grid-cols-4 gap-2">{["Cliente", "Motor", "Servicio", "Confirmar"].map((label, index) => <div key={label} className={`rounded px-3 py-2 text-center text-xs font-semibold ${step === index + 1 ? "bg-blue-600 text-white" : step > index + 1 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>{index + 1}. {label}</div>)}</div>{error && <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    {step === 1 && <section className="mt-6"><h4 className="text-lg font-bold">Seleccionar cliente</h4><p className="mt-1 text-sm text-slate-600">Busca y selecciona al cliente asociado con la orden.</p><label className="mt-5 block text-sm font-medium">Cliente<select className="stitch-input mt-1.5" value={form.clientId} onChange={(event) => set("clientId", event.target.value)}><option value="">Selecciona un cliente</option>{clients.map((item) => <option value={item.id} key={item.id}>{item.fullName} · {item.identification}</option>)}</select></label>{client && <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm"><strong>{client.fullName}</strong><br />{client.identificationType}: {client.identification} · {client.phone ?? "Sin teléfono"}</div>}</section>}
-    {step === 2 && <section className="mt-6"><h4 className="text-lg font-bold">Datos del motor</h4><div className="mt-5 grid gap-4 sm:grid-cols-2"><Label label="Marca"><input className="stitch-input" placeholder="Ej. Toyota, Caterpillar, Cummins" value={form.engineBrand} onChange={(event) => set("engineBrand", event.target.value)} /></Label><Label label="Modelo"><input className="stitch-input" placeholder="Ej. 2KD-FTV" value={form.engineModel} onChange={(event) => set("engineModel", event.target.value)} /></Label><Label label="Serie o VIN"><input className="stitch-input" value={form.engineSerial} onChange={(event) => set("engineSerial", event.target.value)} /></Label></div></section>}
-    {step === 3 && <section className="mt-6"><h4 className="text-lg font-bold">Servicio solicitado</h4><div className="mt-5 grid gap-4"><Label label="Tipo de servicio"><select className="stitch-input" value={form.serviceType} onChange={(event) => set("serviceType", event.target.value)}><option>Diagnóstico</option><option>Reconstrucción</option><option>Reparación</option><option>Mantenimiento</option></select></Label><Label label="Prioridad"><select className="stitch-input" value={form.priority} onChange={(event) => set("priority", event.target.value)}><option value="NORMAL">Normal</option><option value="HIGH">Alta</option><option value="URGENT">Urgente</option></select></Label><Label label="Descripción de fallas o servicio"><textarea className="stitch-input min-h-24 py-2" value={form.description} onChange={(event) => set("description", event.target.value)} /></Label><Label label="Notas de recepción"><textarea className="stitch-input min-h-20 py-2" value={form.intakeNotes} onChange={(event) => set("intakeNotes", event.target.value)} /></Label><Label label="Nota de seguimiento autorizada"><textarea className="stitch-input min-h-20 py-2" value={form.publicNote} onChange={(event) => set("publicNote", event.target.value)} /></Label><Label label="Fecha estimada"><input className="stitch-input" type="date" value={form.estimatedDate} onChange={(event) => set("estimatedDate", event.target.value)} /></Label></div></section>}
-    {step === 4 && <section className="mt-6 grid gap-4 sm:grid-cols-2"><Summary title="Cliente seleccionado" body={client ? `${client.fullName} · ${client.identification}` : ""} /><Summary title="Datos del motor" body={`${form.engineBrand} ${form.engineModel}${form.engineSerial ? ` · ${form.engineSerial}` : ""}`} /><Summary title="Servicio solicitado" body={`${form.serviceType}: ${form.description}`} /><Summary title="Fecha estimada" body={form.estimatedDate || "No definida"} /></section>}
-    <div className="mt-8 flex justify-between border-t border-slate-200 pt-5"><button type="button" className="stitch-button stitch-button-secondary" onClick={() => step === 1 ? close() : setStep(step - 1)}>{step === 1 ? "Cancelar" : "Anterior"}</button>{step < 4 ? <button type="button" className="stitch-button stitch-button-primary" onClick={advance}>Continuar</button> : <button disabled={saving} className="stitch-button stitch-button-primary">{saving ? "Registrando..." : "Registrar orden"}</button>}</div></form></div>;
+
+  if (created) {
+    return (
+      <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/40 p-4">
+        <section className="stitch-card w-full max-w-2xl rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+            <Icon name="person_check" className="size-8 text-emerald-600" />
+          </div>
+          <p className="mt-3 text-xs font-bold uppercase tracking-wider text-emerald-700">Orden registrada correctamente</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">{created.code}</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cliente: <span className="font-semibold text-slate-800">{client?.fullName ?? created.clientName}</span>
+          </p>
+
+          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Código de seguimiento</p>
+            <p className="mt-1 select-all font-mono text-base font-bold tracking-wider text-slate-900 sm:text-lg break-all">
+              {created.trackingCode}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Proporcione este código al cliente o comparta el acceso directo para consultar el avance en tiempo real.
+            </p>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Acceso para el cliente</p>
+            <div className="flex justify-center">
+              <TrackingShareActions
+                orderNumber={created.code}
+                trackingCode={created.trackingCode}
+                clientId={created.clientId}
+                clientName={client?.fullName ?? created.clientName}
+                initialClientPhone={client?.phone ?? null}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-center border-t border-slate-200 pt-6">
+            <button
+              type="button"
+              className="stitch-button stitch-button-primary"
+              onClick={completed}
+            >
+              Finalizar y ver órdenes
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-30 overflow-y-auto bg-slate-950/40 p-4">
+      <form onSubmit={submit} className="stitch-card mx-auto my-6 w-full max-w-4xl p-6">
+        <div className="flex justify-between gap-4">
+          <div>
+            <h3 className="text-2xl font-bold">{step === 4 ? "Revisar y confirmar orden" : "Crear nueva orden de trabajo"}</h3>
+            <p className="mt-1 text-sm text-slate-600">Completa los pasos para registrar una nueva reparación.</p>
+          </div>
+          <button type="button" onClick={close} aria-label="Cerrar"><Icon name="close" /></button>
+        </div>
+        <div className="mt-5 grid grid-cols-4 gap-2">
+          {["Cliente", "Motor", "Servicio", "Confirmar"].map((label, index) => (
+            <div key={label} className={`rounded px-3 py-2 text-center text-xs font-semibold ${step === index + 1 ? "bg-blue-600 text-white" : step > index + 1 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>
+              {index + 1}. {label}
+            </div>
+          ))}
+        </div>
+        {error && <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+        {step === 1 && (
+          <section className="mt-6">
+            <h4 className="text-lg font-bold">Seleccionar cliente</h4>
+            <p className="mt-1 text-sm text-slate-600">Busca y selecciona al cliente asociado con la orden.</p>
+            <label className="mt-5 block text-sm font-medium">Cliente
+              <select className="stitch-input mt-1.5" value={form.clientId} onChange={(event) => set("clientId", event.target.value)}>
+                <option value="">Selecciona un cliente</option>
+                {clients.map((item) => (
+                  <option value={item.id} key={item.id}>{item.fullName} · {item.identification}</option>
+                ))}
+              </select>
+            </label>
+            {client && (
+              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm">
+                <strong>{client.fullName}</strong><br />
+                {client.identificationType}: {client.identification} · {client.phone ?? "Sin teléfono"}
+              </div>
+            )}
+          </section>
+        )}
+        {step === 2 && (
+          <section className="mt-6">
+            <h4 className="text-lg font-bold">Datos del motor</h4>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <Label label="Marca"><input className="stitch-input" placeholder="Ej. Toyota, Caterpillar, Cummins" value={form.engineBrand} onChange={(event) => set("engineBrand", event.target.value)} /></Label>
+              <Label label="Modelo"><input className="stitch-input" placeholder="Ej. 2KD-FTV" value={form.engineModel} onChange={(event) => set("engineModel", event.target.value)} /></Label>
+              <Label label="Serie o VIN"><input className="stitch-input" value={form.engineSerial} onChange={(event) => set("engineSerial", event.target.value)} /></Label>
+            </div>
+          </section>
+        )}
+        {step === 3 && (
+          <section className="mt-6">
+            <h4 className="text-lg font-bold">Servicio solicitado</h4>
+            <div className="mt-5 grid gap-4">
+              <Label label="Tipo de servicio">
+                <select className="stitch-input" value={form.serviceType} onChange={(event) => set("serviceType", event.target.value)}>
+                  <option>Diagnóstico</option>
+                  <option>Reconstrucción</option>
+                  <option>Reparación</option>
+                  <option>Mantenimiento</option>
+                </select>
+              </Label>
+              <Label label="Prioridad">
+                <select className="stitch-input" value={form.priority} onChange={(event) => set("priority", event.target.value)}>
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">Alta</option>
+                  <option value="URGENT">Urgente</option>
+                </select>
+              </Label>
+              <Label label="Descripción de fallas o servicio"><textarea className="stitch-input min-h-24 py-2" value={form.description} onChange={(event) => set("description", event.target.value)} /></Label>
+              <Label label="Notas de recepción"><textarea className="stitch-input min-h-20 py-2" value={form.intakeNotes} onChange={(event) => set("intakeNotes", event.target.value)} /></Label>
+              <Label label="Nota de seguimiento autorizada"><textarea className="stitch-input min-h-20 py-2" value={form.publicNote} onChange={(event) => set("publicNote", event.target.value)} /></Label>
+              <Label label="Fecha estimada"><input className="stitch-input" type="date" value={form.estimatedDate} onChange={(event) => set("estimatedDate", event.target.value)} /></Label>
+            </div>
+          </section>
+        )}
+        {step === 4 && (
+          <section className="mt-6 grid gap-4 sm:grid-cols-2">
+            <Summary title="Cliente seleccionado" body={client ? `${client.fullName} · ${client.identification}` : ""} />
+            <Summary title="Datos del motor" body={`${form.engineBrand} ${form.engineModel}${form.engineSerial ? ` · ${form.engineSerial}` : ""}`} />
+            <Summary title="Servicio solicitado" body={`${form.serviceType}: ${form.description}`} />
+            <Summary title="Fecha estimada" body={form.estimatedDate || "No definida"} />
+          </section>
+        )}
+        <div className="mt-8 flex justify-between border-t border-slate-200 pt-5">
+          <button type="button" className="stitch-button stitch-button-secondary" onClick={() => (step === 1 ? close() : setStep(step - 1))}>
+            {step === 1 ? "Cancelar" : "Anterior"}
+          </button>
+          {step < 4 ? (
+            <button type="button" className="stitch-button stitch-button-primary" onClick={advance}>Continuar</button>
+          ) : (
+            <button disabled={saving} className="stitch-button stitch-button-primary">{saving ? "Registrando..." : "Registrar orden"}</button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
 }
 function Label({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block text-sm font-medium text-slate-700"><span className="mb-1.5 block">{label}</span>{children}</label>; }
 function Summary({ title, body }: { title: string; body: string }) { return <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><h4 className="font-semibold">{title}</h4><p className="mt-2 text-sm text-slate-600">{body}</p></div>; }
