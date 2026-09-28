@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-const iconNames = ["add", "arrow_left", "assessment", "close", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "menu", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "refresh", "search", "settings", "shield", "tag", "visibility", "visibility_off"] as const;
+const iconNames = ["add", "arrow_left", "assessment", "close", "content_copy", "dashboard", "edit", "engineering", "filter", "group", "handshake", "history", "history_edu", "inventory", "key", "logout", "menu", "payments", "person_add", "person_check", "person_off", "phone", "post_add", "print", "qr_code", "refresh", "search", "settings", "shield", "tag", "visibility", "visibility_off"] as const;
 
 export type IconName = (typeof iconNames)[number];
 
@@ -9,6 +9,7 @@ const paths: Record<IconName, string> = {
   arrow_left: "M19 12H5M11 18l-6-6 6-6",
   assessment: "M5 20V10M12 20V4M19 20v-7M3 20h18",
   close: "M6 6l12 12M18 6L6 18",
+  content_copy: "M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.24a2 2 0 0 0-.59-1.41l-3.24-3.24A2 2 0 0 0 14.76 2H10a2 2 0 0 0-2 2zM4 8v12a2 2 0 0 0 2 2h8",
   dashboard: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z",
   edit: "M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3zM14 7l3 3",
   engineering: "M14.7 6.2a4.3 4.3 0 0 0-5.4 5.4L4.5 16.4a2.1 2.1 0 1 0 3 3l4.8-4.8a4.3 4.3 0 0 0 5.4-5.4l-3.1 3.1-2.8-2.8 2.9-3.3z",
@@ -27,6 +28,8 @@ const paths: Record<IconName, string> = {
   person_off: "M3 3l18 18M15.5 18.8a4.5 4.5 0 0 0-4-5.8h-3a4.5 4.5 0 0 0-4.4 3.8M9 9a3 3 0 0 1-2.1-5.1M13.2 9.2A3 3 0 0 0 10.8 4",
   phone: "M7 3h3l1 5-2 1.5a14 14 0 0 0 5.5 5.5L16 13l5 1v3c0 1.1-.9 2-2 2C10.2 19 5 13.8 5 5c0-1.1.9-2 2-2z",
   post_add: "M5 4h10l4 4v12H5zM15 4v4h4M8 13h6M11 10v6M8 13h6",
+  print: "M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z",
+  qr_code: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17 14h3M14 17h3v4h-3zM20 20h1",
   refresh: "M20 11a8 8 0 1 0 1 4.2M20 4v7h-7",
   search: "m20 20-4.35-4.35M10.8 17a6.2 6.2 0 1 1 0-12.4 6.2 6.2 0 0 1 0 12.4z",
   settings: "M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5zM19.4 13.5a7.7 7.7 0 0 0 .1-1.5 7.7 7.7 0 0 0-.1-1.5l2-1.55-2-3.46-2.35.95a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.35 2.94a7.8 7.8 0 0 0-2.6 1.5L4.8 5.49l-2 3.46 2 1.55A7.7 7.7 0 0 0 4.7 12c0 .51.04 1.01.1 1.5l-2 1.55 2 3.46 2.35-.95a7.8 7.8 0 0 0 2.6 1.5L10.1 22h4l.35-2.94a7.8 7.8 0 0 0 2.6-1.5l2.35.95 2-3.46-2-1.55z",

@@ -45,4 +45,34 @@ body {
   .public-tracking-print .lg\:grid-cols-\[1fr_340px\] { grid-template-columns: minmax(0, 1fr) 52mm !important; gap: 5mm !important; margin-top: 5mm !important; }
   .public-tracking-print .shadow-sm { box-shadow: none !important; }
   .public-tracking-print button, .public-tracking-print a { display: none !important; }
+
+  /* Impresión de tarjeta QR de seguimiento */
+  body.printing-qr-modal * {
+    visibility: hidden !important;
+  }
+  body.printing-qr-modal .tracking-qr-printable,
+  body.printing-qr-modal .tracking-qr-printable * {
+    visibility: visible !important;
+  }
+  body.printing-qr-modal .tracking-qr-printable {
+    position: absolute !important;
+    left: 50% !important;
+    top: 25mm !important;
+    transform: translateX(-50%) !important;
+    width: 95mm !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 6mm !important;
+    border: 2px solid #0f172a !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  body.printing-qr-modal .tracking-qr-no-print,
+  body.printing-qr-modal .tracking-qr-modal-overlay {
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
 }
