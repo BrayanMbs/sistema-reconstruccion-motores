@@ -1,3 +1,10 @@
+import { Suspense } from "react";
 import { PublicTrackingView } from "@/modules/public-tracking/components/public-tracking-view";
 
-export default function PublicTrackingPage() { return <PublicTrackingView />; }
+export default function PublicTrackingPage() {
+  return (
+    <Suspense fallback={null}>
+      <PublicTrackingView />
+    </Suspense>
+  );
+}
