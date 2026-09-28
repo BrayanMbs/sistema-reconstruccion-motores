@@ -94,6 +94,39 @@ describe("reports HTTP contracts and authorization", () => {
     expect(mocks.orders).toHaveBeenCalledWith(expect.objectContaining({ status: "COMPLETED", page: 2, limit: 10, search: "OT-1" }));
   });
 
+  it("forwards valid movement UUID filters", async () => {
+    const itemId = "123e4567-e89b-42d3-a456-426614174001";
+    const responsibleUserId = "123e4567-e89b-42d3-a456-426614174002";
+    const workOrderId = "123e4567-e89b-42d3-a456-426614174003";
+    const response = await request(app)
+      .get(`/api/admin/reports/inventory/movements?itemId=${itemId}&responsibleUserId=${responsibleUserId}&workOrderId=${workOrderId}`)
+      .set("Authorization", "Bearer admin");
+    expect(response.status).toBe(200);
+    expect(mocks.inventoryMovements).toHaveBeenCalledWith(expect.objectContaining({ itemId, responsibleUserId, workOrderId }));
+  });
+
+  it.each([
+    ["itemId", "123"],
+    ["responsibleUserId", "motor"],
+    ["workOrderId", "abc"]
+  ])("rejects invalid movement UUID %s with 422 before executing the report query", async (field, value) => {
+    const response = await request(app)
+      .get(`/api/admin/reports/inventory/movements?${field}=${value}`)
+      .set("Authorization", "Bearer admin");
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+    expect(mocks.inventoryMovements).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid movement UUID in CSV export before executing the export query", async () => {
+    const response = await request(app)
+      .get("/api/admin/reports/export?reportType=inventory-movements&itemId=123")
+      .set("Authorization", "Bearer admin");
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
+    expect(mocks.exportCsv).not.toHaveBeenCalled();
+  });
+
   it.each([
     "/api/admin/reports/orders", "/api/admin/reports/clients", "/api/admin/reports/inventory",
     "/api/admin/reports/inventory/movements", "/api/admin/reports/finance"

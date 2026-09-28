@@ -36,5 +36,19 @@ describe("reports validators", () => {
     expect(() => reportInventoryMovementFilters({ startDate: "2026-03-02", endDate: "2026-03-01" }))
       .toThrowError(expect.objectContaining({ code: "INVALID_DATE_RANGE" }));
   });
+
+  it.each(["itemId", "responsibleUserId", "workOrderId"])("accepts a valid UUID in %s", (field) => {
+    const uuid = "123e4567-e89b-42d3-a456-426614174000";
+    expect(reportInventoryMovementFilters({ [field]: uuid })).toMatchObject({ [field]: uuid });
+  });
+
+  it.each([
+    ["itemId", "123"],
+    ["responsibleUserId", "motor"],
+    ["workOrderId", "abc"]
+  ])("rejects an invalid UUID in %s", (field, value) => {
+    expect(() => reportInventoryMovementFilters({ [field]: value }))
+      .toThrowError(expect.objectContaining({ code: "VALIDATION_ERROR", statusCode: 422 }));
+  });
 });
 

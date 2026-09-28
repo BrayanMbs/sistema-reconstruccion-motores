@@ -1,7 +1,7 @@
 import type { CreateInventoryItemInput, InventoryMovementFilters, InventoryMovementInput, InventoryListFilters, UpdateInventoryItemInput } from "../dtos/inventory.dtos";
 import type { InventoryItemType, InventoryMovementType } from "../models/domain";
 import { AppError } from "../utils/app-error";
-import { limitFromQuery, optionalDate, optionalText, pageFromQuery, requireText } from "./common.validators";
+import { limitFromQuery, optionalDate, optionalText, pageFromQuery, requireText, requireUuid } from "./common.validators";
 
 const itemTypes = ["PART", "MATERIAL", "TOOL", "CONSUMABLE"] as const;
 const movementTypes = ["ENTRY", "EXIT", "ADJUSTMENT"] as const;
@@ -12,6 +12,8 @@ const enumValue = <T extends readonly string[]>(value: unknown, values: T, field
   if (typeof value !== "string" || !values.includes(value)) throw new AppError(`${field} no es válido`, 422, "VALIDATION_ERROR");
   return value as T[number];
 };
+const optionalUuid = (value: unknown, field: string): string | undefined =>
+  value === undefined || value === null || value === "" ? undefined : requireUuid(value, field);
 const nonNegativeAmount = (value: unknown, field: string): number => {
   if (value === null || value === undefined || value === "") throw new AppError(`${field} es obligatorio`, 422, "VALIDATION_ERROR");
   const parsed = typeof value === "number" ? value : Number(value);
@@ -60,10 +62,10 @@ export const inventoryListFilters = (query: Record<string, unknown>): InventoryL
   page: pageFromQuery(query.page), limit: limitFromQuery(query.limit)
 });
 export const inventoryMovementFilters = (query: Record<string, unknown>): InventoryMovementFilters => ({
-  itemId: optionalText(query.itemId, "Producto", 80) ?? undefined,
+  itemId: optionalUuid(query.itemId, "Producto"),
   movementType: query.movementType ? enumValue(query.movementType, movementTypes, "Tipo") as InventoryMovementType : undefined,
-  responsibleUserId: optionalText(query.responsibleUserId, "Responsable", 80) ?? undefined,
+  responsibleUserId: optionalUuid(query.responsibleUserId, "Responsable"),
   reason: optionalText(query.reason, "Motivo", 120) ?? undefined, startDate: optionalDate(query.startDate, "Fecha inicial") ?? undefined,
-  endDate: optionalDate(query.endDate, "Fecha final") ?? undefined, workOrderId: optionalText(query.workOrderId, "Orden", 80) ?? undefined,
+  endDate: optionalDate(query.endDate, "Fecha final") ?? undefined, workOrderId: optionalUuid(query.workOrderId, "Orden"),
   page: pageFromQuery(query.page), limit: limitFromQuery(query.limit)
 });
