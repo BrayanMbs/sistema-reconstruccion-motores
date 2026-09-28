@@ -1,2 +1,41 @@
-import { databasePool } from "../config/database";
-export class ReportsService { async summary() { const [orders, inventory, finance, operators] = await Promise.all([databasePool.query("SELECT status, count(*)::int AS count FROM work_orders GROUP BY status"), databasePool.query("SELECT count(*)::int AS total, count(*) FILTER (WHERE stock_quantity <= minimum_stock)::int AS low_stock FROM inventory_items"), databasePool.query("SELECT COALESCE(sum(amount), 0)::float AS total, count(*)::int AS payments FROM payments"), databasePool.query("SELECT count(*)::int AS total, count(*) FILTER (WHERE assigned_worker_id IS NOT NULL)::int AS assigned FROM work_orders")]); return { orders: Object.fromEntries(orders.rows.map((row) => [row.status, row.count])), inventory: inventory.rows[0], finance: finance.rows[0], assignments: operators.rows[0] }; } }
+import type {
+  ReportClientFilters,
+  ReportFinanceFilters,
+  ReportInventoryFilters,
+  ReportInventoryMovementFilters,
+  ReportOrderFilters,
+  ReportSummaryFilters,
+  ReportExportFilters,
+  ReportExportType
+} from "../dtos/reports.dtos";
+import { InventoryRepository } from "../repositories/inventory.repository";
+import { ReportsRepository } from "../repositories/reports.repository";
+import { buildReportCsv, exportFileNames } from "../utils/reports-csv";
+
+export const REPORT_EXPORT_LIMIT = 5000;
+
+export class ReportsService {
+  private readonly reports = new ReportsRepository();
+  private readonly inventory = new InventoryRepository();
+
+  summary(filters: ReportSummaryFilters = {}) { return this.reports.summary(filters); }
+  orders(filters: ReportOrderFilters) { return this.reports.orders(filters); }
+  clients(filters: ReportClientFilters) { return this.reports.clients(filters); }
+  inventoryItems(filters: ReportInventoryFilters) { return this.inventory.list(filters); }
+  inventoryMovements(filters: ReportInventoryMovementFilters) { return this.inventory.movements(filters); }
+  finance(filters: ReportFinanceFilters) { return this.reports.finance(filters); }
+
+  async exportCsv(type: ReportExportType, filters: ReportExportFilters) {
+    let result: { items: unknown[]; total: number };
+    switch (type) {
+      case "orders": result = await this.orders(filters as ReportOrderFilters); break;
+      case "clients": result = await this.clients(filters as ReportClientFilters); break;
+      case "inventory": result = await this.inventoryItems(filters as ReportInventoryFilters); break;
+      case "inventory-movements": result = await this.inventoryMovements(filters as ReportInventoryMovementFilters); break;
+      case "finance": result = await this.finance(filters as ReportFinanceFilters); break;
+    }
+    const rows = result.items.slice(0, REPORT_EXPORT_LIMIT);
+    const truncated = result.total > REPORT_EXPORT_LIMIT || result.items.length > REPORT_EXPORT_LIMIT;
+    return { csv: buildReportCsv(type, rows), total: result.total, exported: rows.length, truncated, filePrefix: exportFileNames[type] };
+  }
+}
