@@ -39,6 +39,21 @@ No requiere parámetros ni sesión. Responde `200`:
 - `GET|POST /api/admin/payments`: ingresos vinculados a órdenes de trabajo.
 - `GET /api/admin/reports/summary` y `GET|PUT /api/admin/settings`: indicadores administrativos y configuración de negocio.
 
+### Reportes administrativos
+
+Todas las rutas siguientes requieren token Bearer válido, perfil activo, contraseña definitiva y rol `ADMIN`:
+
+- `GET /api/admin/reports/summary`: resumen de órdenes, asignación, inventario actual y pagos. Admite `startDate`, `endDate` y `status`.
+- `GET /api/admin/reports/orders`: órdenes filtrables por `startDate`, `endDate`, `status` y `search`.
+- `GET /api/admin/reports/clients`: clientes y actividad de órdenes, filtrables por `startDate`, `endDate`, `status` y `search`.
+- `GET /api/admin/reports/inventory`: inventario actual, filtrable por `search`, `type`, `category` y `status` (`ACTIVE`, `INACTIVE`, `LOW`, `OUT`).
+- `GET /api/admin/reports/inventory/movements`: movimientos filtrables por `startDate`, `endDate`, `itemId`, `movementType`, `responsibleUserId`, `reason` y `workOrderId`.
+- `GET /api/admin/reports/finance`: pagos filtrables por `startDate`, `endDate`, `status`, `method` y `search`.
+
+Los listados aceptan `page` y `limit` y responden `{ items, total, page, limit }`.
+
+`GET /api/admin/reports/export` descarga CSV UTF-8 con BOM. Requiere `reportType`, limitado a `orders`, `clients`, `inventory`, `inventory-movements` o `finance`, y acepta los mismos filtros del listado correspondiente, excepto paginación. Se usa `reportType` para no colisionar con el filtro `type` del inventario. La exportación usa un máximo de 5,000 filas; los headers `X-Export-Total`, `X-Export-Count` y `X-Export-Truncated` informan el resultado y si fue truncado. El contenido aplica escaping CSV y protección contra Formula Injection. El nombre se entrega mediante `Content-Disposition` con fecha del servidor.
+
 Las respuestas de error no incluyen secretos ni trazas. Se utilizan `400/401/403/404/409/422/500` según corresponda.
 
 ## Personal operativo

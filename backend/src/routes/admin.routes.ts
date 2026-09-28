@@ -15,7 +15,15 @@ import {
   updateOrderFinance
 } from "../controllers/payment.controller";
 import { listOperators } from "../controllers/operators.controller";
-import { getReportsSummary } from "../controllers/reports.controller";
+import {
+  getReportsSummary,
+  exportReportsCsv,
+  listReportClients,
+  listReportFinance,
+  listReportInventory,
+  listReportInventoryMovements,
+  listReportOrders
+} from "../controllers/reports.controller";
 import { getSettings, saveSettings } from "../controllers/settings.controller";
 import { requireAuthentication, requireRole } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/async-handler";
@@ -36,5 +44,11 @@ adminRouter.get("/work-orders/:id/inventory", asyncHandler(listOrderInventory));
 adminRouter.get("/finance/orders", asyncHandler(listOrderFinanceSummaries));
 adminRouter.route("/payments").get(asyncHandler(listPayments)).post(asyncHandler(createPayment));
 adminRouter.get("/reports/summary", asyncHandler(getReportsSummary));
+adminRouter.get("/reports/export", asyncHandler(exportReportsCsv));
+adminRouter.get("/reports/orders", asyncHandler(listReportOrders));
+adminRouter.get("/reports/clients", asyncHandler(listReportClients));
+adminRouter.get("/reports/inventory", asyncHandler(listReportInventory));
+adminRouter.get("/reports/inventory/movements", asyncHandler(listReportInventoryMovements));
+adminRouter.get("/reports/finance", asyncHandler(listReportFinance));
 adminRouter.route("/settings").get(asyncHandler(getSettings)).put(asyncHandler(saveSettings));
 adminRouter.get("/audit", asyncHandler(listAuditEvents));
