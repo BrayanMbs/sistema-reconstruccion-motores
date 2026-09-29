@@ -63,7 +63,7 @@ Si surge un error crítico en producción:
 | **Portal Público de Seguimiento** | Consulta pública de órdenes vía `/seguimiento` con número de orden y código aleatorio seguro, con rate limiter por IP. | **Completado** |
 | **Despliegue Vercel + Supabase (Issues #21 y #24)** | Configuración desacoplada en dos proyectos de Vercel (Next.js y Express Serverless), Supavisor connection pooler (`DB_POOL_MAX=1` en prod), liveness `/health` y readiness `/api/health` (503 en falla de DB), CORS endurecido con `ALLOW_VERCEL_PREVIEWS=false` y runtime en Node 24.x. | **Completado** |
 | **Reportes (Issue #14)** | Funcionalidad básica integrada: indicadores generales, órdenes por estado, insumos y total de cobros vía `GET /api/admin/reports/summary`. Filtros avanzados por fechas, indicadores ampliados y exportación CSV/PDF permanecen en desarrollo dentro del **Issue #14 (Abierto)**. | **Básico Integrado / Extensión Pendiente** |
-| **Configuración (Issue #15)** | Funcionalidad básica integrada: datos generales del taller, moneda e impuesto en tabla `app_settings` vía `GET|PUT /api/admin/settings`. Registro de auditoría extendido y gestión avanzada de parámetros permanecen en desarrollo dentro del **Issue #15 (Abierto)**. | **Básico Integrado / Extensión Pendiente** |
+| **Configuración (Issue #15)** | Datos generales del taller, moneda e impuesto en tabla `app_settings` vía `GET|PUT /api/admin/settings`, exclusivo para `ADMIN`. Validación y sanitización en backend y frontend, rechazo de campos fuera del contrato, guardado y auditoría `SETTINGS_UPDATED` en una misma transacción con el detalle de qué cambió. No requiere migraciones nuevas. | **Completado** |
 
 ---
 
