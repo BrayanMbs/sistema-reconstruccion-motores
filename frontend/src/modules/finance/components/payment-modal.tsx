@@ -225,7 +225,7 @@ export function PaymentModal({
                   step="0.01"
                   disabled={!selectedOrder || isMissingTotal || isAlreadyPaid}
                   placeholder="0.00"
-                  className={`stitch-input w-full pl-8 ${isExceedingBalance ? "border-red-400 focus:border-red-500" : ""}`}
+                  className={`stitch-input w-full !pl-8 ${isExceedingBalance ? "border-red-400 focus:border-red-500" : ""}`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />

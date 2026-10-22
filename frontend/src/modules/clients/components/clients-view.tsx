@@ -5,6 +5,7 @@ import { Icon } from "@/shared/components/icon";
 import type { Client, Paginated } from "@/shared/models/admin";
 import { apiRequest } from "@/shared/services/api";
 import { validateEmail, validatePersonName, validateSafeText } from "@/shared/utils/validation";
+import { GUATEMALA_PHONE_PREFIX, localPhoneDigits, normalizeGuatemalaPhone, validateGuatemalaPhone } from "@/modules/clients/utils/phone";
 import Link from "next/link";
 
 export type ClientForm = { fullName: string; identificationType: "DPI" | "NIT" | "PASSPORT"; identification: string; phone: string; email: string; address: string };
@@ -52,9 +53,9 @@ export function ClientsView({ apiBase = "/api/admin", detailBase }: { apiBase?: 
       setFormError(safeIdError);
       return;
     }
-    const safePhoneError = form.phone ? validateSafeText(form.phone, "Teléfono") : null;
-    if (safePhoneError) {
-      setFormError(safePhoneError);
+    const phoneError = validateGuatemalaPhone(form.phone);
+    if (phoneError) {
+      setFormError(phoneError);
       return;
     }
     const emailError = form.email ? validateEmail(form.email) : null;
@@ -71,9 +72,9 @@ export function ClientsView({ apiBase = "/api/admin", detailBase }: { apiBase?: 
     setSaving(true);
     try {
       if (editingClient) {
-        await apiRequest(`${apiBase}/clients/${editingClient.id}`, { method: "PUT", body: JSON.stringify(form) });
+        await apiRequest(`${apiBase}/clients/${editingClient.id}`, { method: "PUT", body: JSON.stringify({ ...form, phone: normalizeGuatemalaPhone(form.phone) || null }) });
       } else {
-        await apiRequest(`${apiBase}/clients`, { method: "POST", body: JSON.stringify(form) });
+        await apiRequest(`${apiBase}/clients`, { method: "POST", body: JSON.stringify({ ...form, phone: normalizeGuatemalaPhone(form.phone) || null }) });
       }
       setShowForm(false);
       setEditingClient(null);
@@ -98,7 +99,7 @@ export function ClientsView({ apiBase = "/api/admin", detailBase }: { apiBase?: 
       fullName: client.fullName,
       identificationType: validIdType,
       identification: client.identification,
-      phone: client.phone ?? "",
+      phone: localPhoneDigits(client.phone),
       email: client.email ?? "",
       address: client.address ?? ""
     });
@@ -125,9 +126,10 @@ export function ClientsView({ apiBase = "/api/admin", detailBase }: { apiBase?: 
 
 export function ClientDialog({ form, formError, isEditing, saving, onClose, onSubmit, setForm }: { form: ClientForm; formError: string; isEditing: boolean; saving: boolean; onClose: () => void; onSubmit: (event: FormEvent) => void; setForm: (value: ClientForm) => void }) {
   const set = (key: keyof ClientForm, value: string) => setForm({ ...form, [key]: value });
-  return <div className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4"><form onSubmit={onSubmit} className="stitch-card my-6 w-full max-w-2xl p-6"><div className="flex items-start justify-between gap-4"><div><h3 className="text-xl font-bold">{isEditing ? "Editar cliente" : "Nuevo cliente"}</h3><p className="mt-1 text-sm text-slate-500">{isEditing ? "Actualice la información del cliente registrado." : "Registre sus datos para poder crear órdenes de trabajo."}</p></div><button type="button" aria-label="Cerrar" onClick={onClose} className="text-slate-500"><Icon name="close" /></button></div>{formError && <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{formError}</p>}<div className="mt-5 grid gap-4 sm:grid-cols-2"><Field label="Nombre completo"><input required maxLength={180} autoFocus className="stitch-input" value={form.fullName} onChange={(event) => set("fullName", event.target.value)} /></Field><Field label="Tipo de identificación"><select className="stitch-input" value={form.identificationType} onChange={(event) => set("identificationType", event.target.value as ClientForm["identificationType"])}><option value="DPI">DPI</option><option value="NIT">NIT</option><option value="PASSPORT">Pasaporte</option></select></Field><Field label="Número de identificación"><input required maxLength={80} className="stitch-input" value={form.identification} onChange={(event) => set("identification", event.target.value)} /></Field><Field label="Teléfono"><input maxLength={40} className="stitch-input" type="tel" value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field><Field label="Correo electrónico"><input maxLength={254} className="stitch-input" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field><Field label="Dirección" full><textarea maxLength={2000} className="stitch-input min-h-24 py-2" value={form.address} onChange={(event) => set("address", event.target.value)} /></Field></div><div className="mt-6 flex justify-end gap-2"><button type="button" className="stitch-button stitch-button-secondary" onClick={onClose}>Cancelar</button><button disabled={saving} className="stitch-button stitch-button-primary">{saving ? "Guardando..." : (isEditing ? "Guardar cambios" : "Registrar cliente")}</button></div></form></div>;
+  return <div className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4"><form onSubmit={onSubmit} className="stitch-card my-6 w-full max-w-2xl p-6"><div className="flex items-start justify-between gap-4"><div><h3 className="text-xl font-bold">{isEditing ? "Editar cliente" : "Nuevo cliente"}</h3><p className="mt-1 text-sm text-slate-500">{isEditing ? "Actualice la información del cliente registrado." : "Registre sus datos para poder crear órdenes de trabajo."}</p></div><button type="button" aria-label="Cerrar" onClick={onClose} className="text-slate-500"><Icon name="close" /></button></div>{formError && <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{formError}</p>}<div className="mt-5 grid gap-4 sm:grid-cols-2"><Field label="Nombre completo"><input required maxLength={180} autoFocus className="stitch-input" value={form.fullName} onChange={(event) => set("fullName", event.target.value)} /></Field><Field label="Tipo de identificación"><select className="stitch-input" value={form.identificationType} onChange={(event) => set("identificationType", event.target.value as ClientForm["identificationType"])}><option value="DPI">DPI</option><option value="NIT">NIT</option><option value="PASSPORT">Pasaporte</option></select></Field><Field label="Número de identificación"><input required maxLength={80} className="stitch-input" value={form.identification} onChange={(event) => set("identification", event.target.value)} /></Field><Field label="Teléfono"><GuatemalaPhoneInput value={form.phone} onChange={(value) => set("phone", value)} /></Field><Field label="Correo electrónico"><input maxLength={254} className="stitch-input" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field><Field label="Dirección" full><textarea maxLength={2000} className="stitch-input min-h-24 py-2" value={form.address} onChange={(event) => set("address", event.target.value)} /></Field></div><div className="mt-6 flex justify-end gap-2"><button type="button" className="stitch-button stitch-button-secondary" onClick={onClose}>Cancelar</button><button disabled={saving} className="stitch-button stitch-button-primary">{saving ? "Guardando..." : (isEditing ? "Guardar cambios" : "Registrar cliente")}</button></div></form></div>;
 }
 
+export function GuatemalaPhoneInput({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <div className="flex"><span className="inline-flex items-center rounded-l-md border border-r-0 border-slate-300 bg-slate-50 px-3 text-slate-600">{GUATEMALA_PHONE_PREFIX}</span><input aria-label="Teléfono" inputMode="numeric" autoComplete="tel-national" maxLength={8} pattern="[0-9]{8}" placeholder="12345678" className="stitch-input rounded-l-none" type="tel" value={value} onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, 8))} /></div>; }
 function Field({ label, children, full = false }: { label: string; children: React.ReactNode; full?: boolean }) { return <label className={`block text-sm font-medium text-slate-700 ${full ? "sm:col-span-2" : ""}`}><span className="mb-1.5 block">{label}</span>{children}</label>; }
 function Detail({ label, value }: { label: string; value: string }) { return <div><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 font-medium text-slate-800">{value}</dd></div>; }
 const formatDate = (value: string) => new Intl.DateTimeFormat("es-GT", { dateStyle: "short" }).format(new Date(value));

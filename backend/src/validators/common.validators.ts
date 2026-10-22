@@ -216,6 +216,14 @@ export const requirePositiveNumber = (value: unknown, field: string): number => 
   return parsed;
 };
 
+export const requirePositiveInteger = (value: unknown, field: string): number => {
+  const parsed = requirePositiveNumber(value, field);
+  if (!Number.isInteger(parsed)) {
+    throw new AppError(`${field} debe ser un número entero`, 422, "VALIDATION_ERROR");
+  }
+  return parsed;
+};
+
 export const pageFromQuery = (value: unknown): number => {
   const page = Number(value ?? 1);
   return Number.isInteger(page) && page > 0 ? page : 1;
