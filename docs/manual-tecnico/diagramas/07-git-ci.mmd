@@ -1,0 +1,11 @@
+flowchart TD
+    Trabajo[Rama de trabajo desde develop] --> PR[Pull Request a develop]
+    PR --> CI[GitHub Actions]
+    CI --> B[Backend lint test build]
+    CI --> F[Frontend lint test build]
+    B --> Revision[Revision e integracion]
+    F --> Revision
+    Revision --> Develop[develop]
+    Develop --> Release[PR de release a main]
+    Release --> Main[main]
+    Main -. Configuracion externa no verificada .-> Vercel[Vercel Production]

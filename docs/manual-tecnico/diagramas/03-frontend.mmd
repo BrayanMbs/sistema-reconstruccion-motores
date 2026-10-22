@@ -1,0 +1,9 @@
+flowchart TD
+    App[App Router y layouts] --> Shell[Shell privado]
+    Shell -->|getSession| Supabase[SDK Supabase]
+    Shell -->|auth me| API[apiRequest]
+    App --> Component[Componentes del modulo]
+    Component --> Service[Servicio o cliente comun]
+    Service --> API
+    API -->|Bearer y JSON| Backend[Express]
+    Component --> Validation[Validacion y modelos locales]

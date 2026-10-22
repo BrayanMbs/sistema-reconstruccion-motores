@@ -1,0 +1,12 @@
+flowchart TD
+    Crear[ADMIN o ADMINISTRATIVE crea con cliente valido] --> Pendiente[PENDING]
+    Pendiente --> Asignar[Asignar OPERATOR activo]
+    Asignar --> Iniciar[Operador asignado inicia]
+    Iniciar --> Proceso[IN_PROGRESS]
+    Proceso --> Avance[Avance sin disminuir y observacion]
+    Avance --> Proceso
+    Proceso --> Finalizar[Operador completa]
+    Finalizar --> Completa[COMPLETED y avance 100]
+    Proceso --> Repuesto[Solicitud de repuesto]
+    Repuesto --> Revision[ADMIN o INVENTORY revisa]
+    Revision -->|Aprobada con cotizacion y stock| Cargo[Salida y cargo al total]

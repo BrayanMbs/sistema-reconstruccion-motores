@@ -1,0 +1,7 @@
+flowchart TD
+    Usuario[Navegador] --> Frontend[Next.js y React]
+    Frontend -->|HTTP JSON y Bearer| Backend[Express]
+    Frontend -->|SDK y sesion| Auth[Supabase Auth]
+    Backend -->|getUser y signIn| Auth
+    Backend --> Servicios[Servicios y repositorios]
+    Servicios -->|pg SQL parametrizado| DB[(PostgreSQL)]
