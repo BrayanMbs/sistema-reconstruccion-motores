@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type PropsWithChildren } from "react";
@@ -11,6 +11,7 @@ import type { AppUser } from "@/shared/models/admin";
 import { apiRequest } from "@/shared/services/api";
 import { getSupabase } from "@/shared/services/supabase";
 import { roleHome } from "@/shared/utils/role-home";
+import { GlobalSearch } from "@/modules/search/components/global-search";
 
 const navigation = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard", exact: true },
@@ -19,6 +20,7 @@ const navigation = [
   { href: "/admin/work-orders", label: "Órdenes de trabajo", icon: "engineering" },
   { href: "/admin/operators", label: "Personal operativo", icon: "group" },
   { href: "/admin/inventory", label: "Inventario", icon: "inventory" },
+  { href: "/admin/solicitudes-repuestos", label: "Solicitudes de repuestos", icon: "post_add" },
   { href: "/admin/finance", label: "Finanzas", icon: "payments" },
   { href: "/admin/reports", label: "Reportes", icon: "assessment" },
   { href: "/admin/settings", label: "Configuración", icon: "settings" },
@@ -81,12 +83,8 @@ export function AdminShell({ children }: PropsWithChildren) {
       navigation={navigation}
       onSignOut={signOut}
       desktopHeaderContent={
-        <div className="relative hidden w-full max-w-md lg:block">
-          <Icon name="search" className="absolute left-3 top-2.5 text-slate-500" />
-          <input
-            className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3 text-sm text-blue-700 outline-none focus:border-blue-600"
-            placeholder="Buscar en el sistema..."
-          />
+        <div className="hidden w-full max-w-md lg:block">
+          <GlobalSearch />
         </div>
       }
     >

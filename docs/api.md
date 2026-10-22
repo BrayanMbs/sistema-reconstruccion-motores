@@ -56,6 +56,37 @@ Los listados aceptan `page` y `limit` y responden `{ items, total, page, limit }
 
 Las respuestas de error no incluyen secretos ni trazas. Se utilizan `400/401/403/404/409/422/500` según corresponda.
 
+### Configuración general
+
+Ambas rutas requieren token Bearer válido, perfil activo, contraseña definitiva y rol `ADMIN`. Cualquier otro rol recibe `403`.
+
+- `GET /api/admin/settings`: responde `{ settings }` con los parámetros globales del taller.
+- `PUT /api/admin/settings`: recibe el objeto completo y responde `{ settings }` con los valores guardados.
+
+```json
+{
+  "company": { "name": "Motor Repair", "phone": "+502 5555-1234", "address": "Zona 1" },
+  "finance": { "currency": "GTQ", "taxRate": 12 }
+}
+```
+
+Validación del backend (autoridad final):
+
+- `company.name`: obligatorio, máximo 150 caracteres.
+- `company.phone`: opcional, máximo 30 caracteres; solo números, espacios y `+ - ( ) .`.
+- `company.address`: opcional, máximo 255 caracteres.
+- `finance.currency`: código de 3 letras (ISO 4217); se normaliza a mayúsculas.
+- `finance.taxRate`: número entre 0 y 100 con hasta 2 decimales.
+- Se rechazan caracteres de control y cualquier campo fuera de este contrato (`422 UNEXPECTED_SETTINGS_FIELD`), por lo que la configuración no puede usarse para guardar contraseñas, tokens ni claves.
+
+El guardado y la auditoría se ejecutan en una misma transacción. Si hubo cambios, se registra `SETTINGS_UPDATED` con el actor autenticado, la fecha del servidor y solo los campos modificados:
+
+```json
+{ "changes": { "finance.taxRate": { "from": 12, "to": 15 } } }
+```
+
+Si los valores enviados son iguales a los guardados, no se escribe ni se audita nada.
+
 ## Personal operativo
 
 Las rutas `/api/operativo/*` requieren un token válido de un perfil activo con rol `OPERATOR`. El backend filtra las órdenes por `assigned_worker_id`; un trabajador no puede acceder a una orden ajena modificando la URL.

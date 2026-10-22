@@ -25,11 +25,13 @@ import {
   listReportOrders
 } from "../controllers/reports.controller";
 import { getSettings, saveSettings } from "../controllers/settings.controller";
+import { globalSearch } from "../controllers/search.controller";
 import { requireAuthentication, requireRole } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/async-handler";
 export const adminRouter = Router();
 adminRouter.use(requireAuthentication, requireRole("ADMIN"));
 adminRouter.get("/dashboard", asyncHandler(getDashboard));
+adminRouter.get("/search", asyncHandler(globalSearch));
 adminRouter.route("/users").get(asyncHandler(listUsers)).post(asyncHandler(createUser));
 adminRouter.route("/users/:id").get(asyncHandler(getUser)).patch(asyncHandler(updateUser));
 adminRouter.patch("/users/:id/role", asyncHandler(updateRole)); adminRouter.patch("/users/:id/status", asyncHandler(updateStatus));

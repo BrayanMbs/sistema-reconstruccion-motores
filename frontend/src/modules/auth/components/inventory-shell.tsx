@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname, useRouter } from "next/navigation";
 import { type PropsWithChildren, useEffect, useState } from "react";
@@ -14,6 +14,7 @@ import { roleHome } from "@/shared/utils/role-home";
 const navigation = [
   { href: "/inventario", label: "Inventario", icon: "dashboard", exact: true },
   { href: "/inventario/productos", label: "Repuestos y materiales", icon: "inventory" },
+  { href: "/inventario/solicitudes", label: "Solicitudes de repuestos", icon: "post_add" },
   { href: "/inventario/historial", label: "Historial de inventario", icon: "history" }
 ] satisfies ReadonlyArray<PrivateNavigationItem>;
 

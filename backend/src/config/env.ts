@@ -98,6 +98,17 @@ const corsOrigins = Array.from(
 const allowVercelPreviews = process.env.ALLOW_VERCEL_PREVIEWS === "true";
 const vercelPreviewProject = process.env.VERCEL_PREVIEW_PROJECT_NAME?.trim();
 
+const parseTrustProxy = (value: string | undefined, defaultVal: boolean | number): boolean | number | string => {
+  if (value === undefined || value === "") return defaultVal;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  const num = Number(value);
+  if (Number.isInteger(num) && num >= 0) return num;
+  return value;
+};
+
+const trustProxy = parseTrustProxy(process.env.TRUST_PROXY, isProduction ? 1 : false);
+
 export const env = {
   isProduction,
   port: asNumber(process.env.PORT, 8080),
@@ -105,6 +116,23 @@ export const env = {
   corsOrigins,
   allowVercelPreviews,
   vercelPreviewProject,
+  trustProxy,
+  bodyLimit: process.env.BODY_LIMIT ?? "1mb",
+  requestTimeoutMs: asNumber(process.env.REQUEST_TIMEOUT_MS, 30000),
+  auth: {
+    maxFailedAttempts: asNumber(process.env.AUTH_MAX_FAILED_ATTEMPTS, 5),
+    lockoutWindowMinutes: asNumber(process.env.AUTH_LOCKOUT_WINDOW_MINUTES, 15),
+    lockoutDurationMinutes: asNumber(process.env.AUTH_LOCKOUT_DURATION_MINUTES, 15),
+    ipRateLimitMax: asNumber(process.env.AUTH_IP_RATE_LIMIT_MAX, 15),
+    ipRateLimitWindowMs: asNumber(process.env.AUTH_IP_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000)
+  },
+  rateLimit: {
+    enabled: process.env.RATE_LIMIT_ENABLED !== "false",
+    apiMax: asNumber(process.env.API_RATE_LIMIT_MAX, 600),
+    apiWindowMs: asNumber(process.env.API_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
+    publicTrackingMax: asNumber(process.env.PUBLIC_TRACKING_RATE_LIMIT_MAX, 60),
+    publicTrackingWindowMs: asNumber(process.env.PUBLIC_TRACKING_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000)
+  },
   database,
   supabase: {
     url: process.env.SUPABASE_URL,

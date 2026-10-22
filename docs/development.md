@@ -63,13 +63,14 @@ Si surge un error crítico en producción:
 | **Portal Público de Seguimiento** | Consulta pública de órdenes vía `/seguimiento` con número de orden y código aleatorio seguro, con rate limiter por IP. | **Completado** |
 | **Despliegue Vercel + Supabase (Issues #21 y #24)** | Configuración desacoplada en dos proyectos de Vercel (Next.js y Express Serverless), Supavisor connection pooler (`DB_POOL_MAX=1` en prod), liveness `/health` y readiness `/api/health` (503 en falla de DB), CORS endurecido con `ALLOW_VERCEL_PREVIEWS=false` y runtime en Node 24.x. | **Completado** |
 | **Reportes (Issue #14)** | Funcionalidad básica integrada: indicadores generales, órdenes por estado, insumos y total de cobros vía `GET /api/admin/reports/summary`. Filtros avanzados por fechas, indicadores ampliados y exportación CSV/PDF permanecen en desarrollo dentro del **Issue #14 (Abierto)**. | **Básico Integrado / Extensión Pendiente** |
-| **Configuración (Issue #15)** | Funcionalidad básica integrada: datos generales del taller, moneda e impuesto en tabla `app_settings` vía `GET|PUT /api/admin/settings`. Registro de auditoría extendido y gestión avanzada de parámetros permanecen en desarrollo dentro del **Issue #15 (Abierto)**. | **Básico Integrado / Extensión Pendiente** |
+| **Configuración (Issue #15)** | Datos generales del taller, moneda e impuesto en tabla `app_settings` vía `GET|PUT /api/admin/settings`, exclusivo para `ADMIN`. Validación y sanitización en backend y frontend, rechazo de campos fuera del contrato, guardado y auditoría `SETTINGS_UPDATED` en una misma transacción con el detalle de qué cambió. No requiere migraciones nuevas. | **Completado** |
+| **Seguridad, Validación y Resiliencia** | Validación de texto en servidor (normalización Unicode NFC, rechazo de caracteres de control, allowlists estrictas para correo, teléfono, DPI/NIT, códigos, prevención de XSS y parámetros SQL). Protección contra ataques de fuerza bruta en inicio de sesión con bloqueo temporal tras 5 intentos fallidos, protección contra ataques distribuidos por IP, mitigación de enumeración de cuentas con respuestas uniformes (401 `INVALID_CREDENTIALS`), headers de seguridad HTTP (`nosniff`, `DENY`, CSP, `Permissions-Policy`), límite de payload (1MB con 413), timeouts (30s) y rate limiting multinivel (`RateLimit-*` y `Retry-After`). Compatibilidad con pruebas autorizadas mediante k6. | **Completado** |
 
 ---
 
 ## 3. Estado de Migraciones de Base de Datos
 
-Las siguientes 9 migraciones se encuentran formalmente versionadas en `backend/database/migrations/` y **ya están aplicadas en Supabase Cloud**:
+Las siguientes 10 migraciones se encuentran formalmente versionadas en `backend/database/migrations/`:
 
 1. `001_issue_1_admin.sql` — Estructura base de usuarios, roles y autenticación.
 2. `002_admin_operations.sql` — Inventario, asignaciones, pagos y parámetros generales.
@@ -80,9 +81,7 @@ Las siguientes 9 migraciones se encuentran formalmente versionadas en `backend/d
 7. `007_cashier_and_finance_workflow.sql` — Módulo de caja y cobros financieros.
 8. `008_order_timeline_and_history.sql` — Eventos cronológicos y línea de tiempo de órdenes.
 9. `009_mandatory_password_change.sql` — Columna `must_change_password` y flujo de cambio forzoso.
-
-> [!NOTE]
-> La tabla `public.app_schema_migrations` en Supabase Cloud registra todas las migraciones anteriores. Este ticket no genera ninguna migración adicional.
+10. `010_auth_security_and_rate_limits.sql` — Tabla `public.auth_login_attempts` para control de intentos de login y bloqueos multi-instancia.
 
 ---
 
@@ -92,9 +91,26 @@ El proyecto cuenta con integración continua automatizada mediante **GitHub Acti
 
 * **Backend:**
   * Linter: ESLint sin errores ni advertencias (`0 errors, 0 warnings`).
-  * Pruebas: Vitest — **20 archivos de prueba, 114 pruebas aprobadas (100%)**.
+  * Pruebas: Vitest — **31 archivos de prueba, 278 pruebas aprobadas (100%)**.
   * Compilación: TypeScript (`tsc -p tsconfig.json`) sin errores.
 * **Frontend:**
   * Linter: ESLint sin errores ni advertencias (`0 errors, 0 warnings`).
-  * Pruebas: Vitest + Testing Library — **11 archivos de prueba, 27 pruebas aprobadas (100%)**.
+  * Pruebas: Vitest + Testing Library — **25 archivos de prueba, 115 pruebas aprobadas (100%)**.
   * Compilación: Next.js 16 (`next build`) — 33 rutas estáticas y dinámicas compiladas exitosamente.
+
+---
+
+## 5. Variables de Entorno de Seguridad y Resiliencia
+
+| Variable | Descripción | Valor por Defecto |
+|---|---|---|
+| `TRUST_PROXY` | Nivel de confianza de proxies para lectura precisa de IP (`X-Forwarded-For`). Acepta enteros, booleanos o IPs. | `1` en producción, `false` en desarrollo |
+| `BODY_LIMIT` | Tamaño máximo permitido en el cuerpo JSON de peticiones. Excederlo genera 413 `PAYLOAD_TOO_LARGE`. | `1mb` |
+| `REQUEST_TIMEOUT_MS` | Tiempo máximo de procesamiento de petición antes de abortar con 504. | `30000` (30s) |
+| `AUTH_MAX_FAILED_ATTEMPTS` | Intentos fallidos permitidos antes de activar bloqueo temporal de cuenta. | `5` |
+| `AUTH_LOCKOUT_WINDOW_MINUTES` | Ventana deslizante para el conteo de intentos fallidos. | `15` |
+| `AUTH_LOCKOUT_DURATION_MINUTES` | Duración del bloqueo temporal de la cuenta tras exceder intentos. | `15` |
+| `AUTH_IP_RATE_LIMIT_MAX` | Intentos de autenticación fallidos permitidos por IP antes de bloqueo temporal de la IP. | `15` |
+| `RATE_LIMIT_ENABLED` | Interruptor global de limitación de tasa. | `true` |
+| `API_RATE_LIMIT_MAX` | Peticiones máximas permitidas por IP hacia `/api` en ventana de 15 minutos. | `600` |
+| `PUBLIC_TRACKING_RATE_LIMIT_MAX` | Consultas máximas de seguimiento público permitidas por IP en ventana de 15 minutos. | `60` |

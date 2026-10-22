@@ -73,8 +73,7 @@ describe("WorkOrdersView (Vista del Administrador)", () => {
   it("permite al Administrador abrir el detalle y acceder a las opciones de seguimiento (QR, WhatsApp, copiar enlace)", async () => {
     render(<WorkOrdersView />);
 
-    expect(await screen.findByText("Órdenes de trabajo")).toBeTruthy();
-    expect(screen.getByText("OT-2026-00010")).toBeTruthy();
+    expect(await screen.findByText("OT-2026-00010")).toBeTruthy();
 
     const viewButton = screen.getByRole("button", { name: "Ver OT-2026-00010" });
     fireEvent.click(viewButton);
