@@ -102,4 +102,25 @@ describe("UsersView mobile actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mostrar contraseña" }));
     expect(password.getAttribute("type")).toBe("text");
   });
+
+  it("rejects malicious SQL injection payloads in user edit form and displays error inside dialog", async () => {
+    render(<UsersView />);
+    fireEvent.click(await screen.findByRole("button", { name: "Opciones" }));
+    fireEvent.click(screen.getByRole("button", { name: "Editar usuario" }));
+
+    expect(await screen.findByRole("dialog", { name: "Editar usuario" })).toBeTruthy();
+    const nameInput = screen.getByDisplayValue("Ana Pérez");
+
+    // Enter SQL injection payload as shown in user's screenshot
+    fireEvent.change(nameInput, { target: { value: "' OR '1'='1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    // Should display validation error inside dialog and NOT call the backend
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByText(/no se permiten patrones de inyección|caracteres o expresiones no permitidas/i)).toBeTruthy();
+    expect(apiRequestMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/admin/users/user-1"),
+      expect.objectContaining({ method: "PATCH" })
+    );
+  });
 });

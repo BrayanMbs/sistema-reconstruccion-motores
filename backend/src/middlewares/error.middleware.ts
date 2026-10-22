@@ -13,7 +13,29 @@ export const errorHandler = (
 ): void => {
   void next;
   if (error instanceof AppError) {
+    if (error.statusCode === 429 && error.details?.retryAfter) {
+      response.setHeader("Retry-After", String(error.details.retryAfter));
+    }
     response.status(error.statusCode).json({ message: error.message, code: error.code, ...(error.details ? error.details : {}) });
+    return;
+  }
+
+  const errorStatus = (error as { status?: number; type?: string }).status;
+  const errorType = (error as { status?: number; type?: string }).type;
+
+  if (errorType === "entity.too.large" || errorStatus === 413) {
+    response.status(413).json({
+      message: "El tamaño del cuerpo de la solicitud excede el límite permitido",
+      code: "PAYLOAD_TOO_LARGE"
+    });
+    return;
+  }
+
+  if (error instanceof SyntaxError && errorStatus === 400 && "body" in error) {
+    response.status(400).json({
+      message: "Formato JSON inválido",
+      code: "INVALID_JSON"
+    });
     return;
   }
 

@@ -146,6 +146,12 @@ export class PaymentRepository {
     try {
       await client.query("BEGIN");
 
+      const actor = await client.query("SELECT role FROM app_users WHERE id=$1 FOR UPDATE", [actorId]);
+      const cashSession = await client.query("SELECT id FROM cash_sessions WHERE cashier_id=$1 AND closed_at IS NULL", [actorId]);
+      if (actor.rows[0]?.role === "CASHIER" && !cashSession.rowCount) {
+        throw new AppError("Abre tu caja antes de registrar un cobro.",409,"CASH_SESSION_NOT_OPEN");
+      }
+
       const orderRes = await client.query(
         `SELECT o.id, o.code, o.total_amount, c.full_name AS client_name
          FROM work_orders o
@@ -186,10 +192,10 @@ export class PaymentRepository {
       }
 
       const insertRes = await client.query(
-        `INSERT INTO payments (work_order_id, amount, method, reference, notes, received_by)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO payments (work_order_id, amount, method, reference, notes, received_by, cash_session_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id`,
-        [input.workOrderId, paymentAmount, input.method, input.reference ?? null, input.notes ?? null, actorId]
+        [input.workOrderId, paymentAmount, input.method, input.reference ?? null, input.notes ?? null, actorId, cashSession.rows[0]?.id ?? null]
       );
       const paymentId = insertRes.rows[0].id;
       const newTotalPaid = Number((currentTotalPaid + paymentAmount).toFixed(2));

@@ -6,6 +6,7 @@ import { Icon } from "@/shared/components/icon";
 import type { AppUser, Paginated, Role } from "@/shared/models/admin";
 import { StatusBadge } from "@/shared/components/status-badge";
 import { apiRequest } from "@/shared/services/api";
+import { validateEmail, validatePersonName } from "@/shared/utils/validation";
 
 const roleLabels: Record<Role, string> = {
   ADMIN: "Administrador",
@@ -21,15 +22,24 @@ type PendingConfirmation = { action: ConfirmationAction; user: AppUser };
 
 const emptyForm: FormData = { fullName: "", email: "", password: "", role: "ADMINISTRATIVE" };
 
-export function UsersView() {
+export function UsersView({
+  initialActive = "",
+  initialRole = "",
+  initialSearch = ""
+}: {
+  initialActive?: string;
+  initialRole?: string;
+  initialSearch?: string;
+} = {}) {
   const [data, setData] = useState<Paginated<AppUser> | null>(null);
-  const [search, setSearch] = useState("");
-  const [role, setRole] = useState("");
-  const [active, setActive] = useState("");
+  const [search, setSearch] = useState(initialSearch);
+  const [role, setRole] = useState(initialRole);
+  const [active, setActive] = useState(initialActive);
   const [error, setError] = useState("");
   const [form, setForm] = useState<FormData>(emptyForm);
   const [editing, setEditing] = useState<AppUser | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [dialogError, setDialogError] = useState("");
   const [saving, setSaving] = useState(false);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [changingStatusUserId, setChangingStatusUserId] = useState<string | null>(null);
@@ -55,13 +65,29 @@ export function UsersView() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    setSaving(true);
+    setDialogError("");
     setError("");
+
+    const nameError = validatePersonName(form.fullName, "Nombre completo");
+    if (nameError) {
+      setDialogError(nameError);
+      return;
+    }
+
+    if (!editing) {
+      const emailError = validateEmail(form.email);
+      if (emailError) {
+        setDialogError(emailError);
+        return;
+      }
+    }
+
+    setSaving(true);
     try {
       if (editing) {
         await apiRequest(`/api/admin/users/${editing.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ fullName: form.fullName, role: form.role })
+          body: JSON.stringify({ fullName: form.fullName.trim(), role: form.role })
         });
       } else {
         await apiRequest("/api/admin/users", { method: "POST", body: JSON.stringify(form) });
@@ -69,9 +95,10 @@ export function UsersView() {
       setShowForm(false);
       setEditing(null);
       setForm(emptyForm);
+      setDialogError("");
       await load();
     } catch (caught) {
-      setError((caught as Error).message);
+      setDialogError((caught as Error).message);
     } finally {
       setSaving(false);
     }
@@ -114,12 +141,14 @@ export function UsersView() {
   const edit = (user: AppUser) => {
     setEditing(user);
     setForm({ fullName: user.fullName, email: user.email, password: "", role: user.role });
+    setDialogError("");
     setShowForm(true);
   };
 
   const openNewUser = () => {
     setEditing(null);
     setForm(emptyForm);
+    setDialogError("");
     setShowForm(true);
   };
 
@@ -240,7 +269,21 @@ export function UsersView() {
         </div>
       </div>
 
-      {showForm && <UserDialog form={form} setForm={setForm} editing={editing} saving={saving} onClose={() => setShowForm(false)} onSubmit={submit} />}
+      {showForm && (
+        <UserDialog
+          form={form}
+          setForm={setForm}
+          editing={editing}
+          saving={saving}
+          dialogError={dialogError}
+          onClose={() => {
+            setShowForm(false);
+            setEditing(null);
+            setDialogError("");
+          }}
+          onSubmit={submit}
+        />
+      )}
       {confirmation && (
         <ConfirmationDialog
           title={confirmation.action === "reset-password" ? "Restablecer contraseña" : confirmation.user.isActive ? "Inactivar usuario" : "Activar usuario"}
@@ -322,7 +365,23 @@ function PasswordVisibilityButton({ visible, onToggle }: { visible: boolean; onT
   return <button type="button" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} onMouseDown={(event) => event.preventDefault()} onClick={onToggle} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-md text-slate-500 hover:bg-slate-100 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600"><Icon name={visible ? "visibility_off" : "visibility"} /></button>;
 }
 
-function UserDialog({ form, setForm, editing, saving, onClose, onSubmit }: { form: FormData; setForm: (value: FormData) => void; editing: AppUser | null; saving: boolean; onClose: () => void; onSubmit: (event: FormEvent) => void }) {
+function UserDialog({
+  form,
+  setForm,
+  editing,
+  saving,
+  dialogError,
+  onClose,
+  onSubmit
+}: {
+  form: FormData;
+  setForm: (value: FormData) => void;
+  editing: AppUser | null;
+  saving: boolean;
+  dialogError: string;
+  onClose: () => void;
+  onSubmit: (event: FormEvent) => void;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const set = (key: keyof FormData, value: string) => setForm({ ...form, [key]: value });
   const title = editing ? "Editar usuario" : "Nuevo usuario";
@@ -334,6 +393,11 @@ function UserDialog({ form, setForm, editing, saving, onClose, onSubmit }: { for
           <div className="min-w-0"><h3 id="user-dialog-title" className="text-xl font-bold">{title}</h3><p className="mt-1 text-sm text-slate-500">{editing ? "Actualiza el nombre y rol de acceso." : "La cuenta se creará en Supabase Auth."}</p></div>
           <button type="button" aria-label="Cerrar" onClick={onClose} className="flex min-h-10 min-w-10 items-center justify-center rounded text-slate-500 hover:bg-slate-100"><Icon name="close" /></button>
         </div>
+        {dialogError && (
+          <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {dialogError}
+          </p>
+        )}
         <div className="mt-5 grid flex-1 gap-4 overflow-y-auto pr-1">
           <Field label="Nombre completo"><input required className="stitch-input" value={form.fullName} onChange={(event) => set("fullName", event.target.value)} /></Field>
           <Field label="Correo electrónico"><input required disabled={!!editing} className="stitch-input disabled:bg-slate-100" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field>

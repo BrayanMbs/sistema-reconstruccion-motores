@@ -3,6 +3,9 @@ import express from "express";
 import { env } from "./config/env";
 import { getLiveness } from "./controllers/health.controller";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
+import { createRateLimiter } from "./middlewares/rate-limit.middleware";
+import { requestTimeoutMiddleware } from "./middlewares/request-timeout.middleware";
+import { securityHeadersMiddleware } from "./middlewares/security-headers.middleware";
 import { apiRouter } from "./routes";
 
 export const isVercelPreviewOrigin = (
@@ -52,12 +55,23 @@ export const buildCorsOptions = (currentEnv = env): CorsOptions => ({
 
 export const createApp = (currentEnv = env) => {
   const expressApp = express();
-  expressApp.set("trust proxy", 1);
+  expressApp.disable("x-powered-by");
+  expressApp.set("trust proxy", currentEnv.trustProxy);
+
+  expressApp.use(securityHeadersMiddleware);
   expressApp.use(cors(buildCorsOptions(currentEnv)));
-  expressApp.use(express.json());
+  expressApp.use(express.json({ limit: currentEnv.bodyLimit }));
+  expressApp.use(requestTimeoutMiddleware(currentEnv.requestTimeoutMs));
+
+  const generalApiLimiter = createRateLimiter({
+    max: currentEnv.rateLimit.apiMax,
+    windowMs: currentEnv.rateLimit.apiWindowMs,
+    message: "Límite de solicitudes de API excedido. Intenta de nuevo más tarde.",
+    errorCode: "API_RATE_LIMIT_EXCEEDED"
+  });
 
   expressApp.get("/health", getLiveness);
-  expressApp.use("/api", apiRouter);
+  expressApp.use("/api", generalApiLimiter, apiRouter);
   expressApp.use(notFoundHandler);
   expressApp.use(errorHandler);
 
@@ -66,4 +80,3 @@ export const createApp = (currentEnv = env) => {
 
 export const app = createApp();
 export default app;
-

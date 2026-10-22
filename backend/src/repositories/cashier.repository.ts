@@ -8,6 +8,24 @@ const mapOrder = (row: Record<string, unknown>): CashierOrder => { const totalAm
 const paymentSelect = `SELECT p.*,o.code AS work_order_code,c.full_name AS client_name,u.full_name AS received_by_name FROM payments p JOIN work_orders o ON o.id=p.work_order_id JOIN clients c ON c.id=o.client_id LEFT JOIN app_users u ON u.id=p.received_by`;
 const summaries = `SELECT o.id AS work_order_id,o.code AS work_order_code,c.full_name AS client_name,o.status AS operational_status,o.created_at,o.total_amount,COALESCE(SUM(p.amount),0)::numeric(12,2) AS total_paid FROM work_orders o JOIN clients c ON c.id=o.client_id LEFT JOIN payments p ON p.work_order_id=o.id GROUP BY o.id,c.full_name`;
 export class CashierRepository {
+  async orderSummary(id: string) {
+    const result = await databasePool.query(`WITH financial AS (${summaries})
+      SELECT financial.*, o.engine_brand, o.engine_model, o.engine_serial, o.service_type,
+        o.description, o.progress, o.estimated_date,
+        COALESCE(worker.full_name,o.assigned_worker) AS assigned_worker_name
+      FROM financial JOIN work_orders o ON o.id=financial.work_order_id
+      LEFT JOIN app_users worker ON worker.id=o.assigned_worker_id
+      WHERE o.id=$1`,[id]);
+    if(!result.rowCount) return null;
+    const row=result.rows[0];
+    const payments=await databasePool.query(`${paymentSelect} WHERE p.work_order_id=$1 ORDER BY p.created_at DESC`,[id]);
+    const charges=await databasePool.query(`SELECT r.id,i.name,r.quantity::float8 AS quantity,r.approved_unit_price::float8 AS "unitPrice",r.charge_amount::float8 AS amount
+      FROM part_requests r JOIN inventory_items i ON i.id=r.inventory_item_id WHERE r.work_order_id=$1 AND r.status='APPROVED' ORDER BY r.reviewed_at`,[id]);
+    return {...mapOrder(row),partsCharges:charges.rows,engineBrand:row.engine_brand,engineModel:row.engine_model,
+      engineSerial:row.engine_serial,serviceType:row.service_type,description:row.description,
+      progress:Number(row.progress),estimatedDate:row.estimated_date,assignedWorker:row.assigned_worker_name,
+      payments:payments.rows.map(mapPayment)};
+  }
   async orders(filters: CashierOrderFilters) { const params: unknown[]=[]; const clauses:string[]=[]; if(filters.search){params.push(`%${filters.search}%`);clauses.push(`(work_order_code ILIKE $${params.length} OR client_name ILIKE $${params.length})`);} if(filters.financialStatus){params.push(filters.financialStatus);clauses.push(`financial_status=$${params.length}`);} const where=clauses.length?`WHERE ${clauses.join(" AND ")}`:""; const query=`WITH base AS (${summaries}), listed AS (SELECT *,CASE WHEN total_amount IS NULL THEN 'PENDING' WHEN total_paid >= total_amount THEN 'PAID' WHEN total_paid > 0 THEN 'PARTIAL' ELSE 'PENDING' END AS financial_status FROM base) SELECT * FROM listed ${where}`; const total=await databasePool.query(`SELECT count(*)::int AS count FROM (${query}) q`,params);params.push(filters.limit,(filters.page-1)*filters.limit);const rows=await databasePool.query(`${query} ORDER BY created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);return {items:rows.rows.map(mapOrder),total:total.rows[0].count,page:filters.page,limit:filters.limit}; }
   async payments(filters: CashierPaymentFilters) { const params:unknown[]=[];const clauses:string[]=[];const add=(sql:string,value:unknown)=>{params.push(value);clauses.push(sql.replace("?",`$${params.length}`));};if(filters.search)add("(o.code ILIKE ? OR c.full_name ILIKE ? OR p.reference ILIKE ?)",`%${filters.search}%`);if(filters.method)add("p.method=$?",filters.method);if(filters.cashierId)add("p.received_by=$?",filters.cashierId);if(filters.startDate)add("p.created_at >= ?::date",filters.startDate);if(filters.endDate)add("p.created_at < (?::date + interval '1 day')",filters.endDate); const where=clauses.length?`WHERE ${clauses.join(" AND ")}`:"";const total=await databasePool.query(`SELECT count(*)::int AS count FROM payments p JOIN work_orders o ON o.id=p.work_order_id JOIN clients c ON c.id=o.client_id ${where}`,params);params.push(filters.limit,(filters.page-1)*filters.limit);const rows=await databasePool.query(`${paymentSelect} ${where} ORDER BY p.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`,params);return {items:rows.rows.map(mapPayment),total:total.rows[0].count,page:filters.page,limit:filters.limit}; }
   async payment(id:string){const result=await databasePool.query(`${paymentSelect} WHERE p.id=$1`,[id]);return result.rowCount?mapPayment(result.rows[0]):null;}

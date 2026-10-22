@@ -1,5 +1,6 @@
 import type { AppSettings } from "@/shared/models/admin";
 import type { SettingsForm } from "../dtos/settings.dto";
+import { validateSafeText } from "@/shared/utils/validation";
 
 export type { AppSettings };
 export type SettingsField = "name" | "phone" | "address" | "currency" | "taxRate";
@@ -16,11 +17,19 @@ export const validateSettingsForm = (form: SettingsForm): SettingsErrors => {
 
   if (!name) errors.name = "El nombre comercial es obligatorio.";
   else if (name.length > SETTINGS_LIMITS.name) errors.name = `Use como máximo ${SETTINGS_LIMITS.name} caracteres.`;
+  else {
+    const safeError = validateSafeText(name, "El nombre comercial");
+    if (safeError) errors.name = safeError;
+  }
 
   if (phone.length > SETTINGS_LIMITS.phone) errors.phone = `Use como máximo ${SETTINGS_LIMITS.phone} caracteres.`;
   else if (phone && (!/^[0-9+().\- ]+$/.test(phone) || !/\d/.test(phone))) errors.phone = "Use solo números, espacios y los signos + - ( ) .";
 
   if (form.company.address.trim().length > SETTINGS_LIMITS.address) errors.address = `Use como máximo ${SETTINGS_LIMITS.address} caracteres.`;
+  else if (form.company.address.trim()) {
+    const safeError = validateSafeText(form.company.address, "La dirección");
+    if (safeError) errors.address = safeError;
+  }
 
   if (!/^[A-Za-z]{3}$/.test(form.finance.currency.trim())) errors.currency = "Use un código de 3 letras, por ejemplo GTQ.";
 

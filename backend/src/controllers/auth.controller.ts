@@ -5,6 +5,6 @@ import { requireEmail, requireText } from "../validators/common.validators";
 import { validateNewPassword } from "../validators/auth.validators";
 const service = new AuthService();
 const users = new UserService();
-export const login = async (request: Request, response: Response): Promise<void> => { const result = await service.signIn(requireEmail(request.body.email), requireText(request.body.password, "Contraseña", 128)); response.json(result); };
+export const login = async (request: Request, response: Response): Promise<void> => { const ip = request.ip || request.socket.remoteAddress || "unknown"; const result = await service.signIn(requireEmail(request.body.email), requireText(request.body.password, "Contraseña", 128, { allowRawText: true }), ip); response.json(result); };
 export const currentUser = async (request: Request, response: Response): Promise<void> => { response.json({ user: request.appUser }); };
 export const changeTemporaryPassword = async (request: Request, response: Response): Promise<void> => { response.json({ user: await users.changeTemporaryPassword(request.appUser!.id, validateNewPassword(request.body.newPassword)) }); };
