@@ -4,6 +4,16 @@ import { AppError } from "../utils/app-error";
 import { WorkOrderService } from "../services/work-order.service";
 import { limitFromQuery, optionalDate, optionalText, pageFromQuery, requireText, requireUuid, sanitizeSearchQuery } from "../validators/common.validators";
 const service = new WorkOrderService();
+const todayInGuatemala = (): string => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Guatemala",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
 export const listWorkOrders = async (request: Request, response: Response): Promise<void> => { const page = pageFromQuery(request.query.page); const limit = limitFromQuery(request.query.limit); const result = await service.list({ search: sanitizeSearchQuery(request.query.search), status: typeof request.query.status === "string" ? request.query.status : undefined, page, limit }); response.json({ ...result, page, limit }); };
 export const getWorkOrder = async (request: Request, response: Response): Promise<void> => { response.json({ order: await service.get(requireText(request.params.id, "Identificador")) }); };
 const orderFields = (body: Record<string, unknown>): UpdateWorkOrderDto => {
@@ -11,13 +21,17 @@ const orderFields = (body: Record<string, unknown>): UpdateWorkOrderDto => {
   if (priority !== undefined && priority !== "NORMAL" && priority !== "HIGH" && priority !== "URGENT") {
     throw new AppError("Prioridad no válida", 422, "VALIDATION_ERROR");
   }
+  const estimatedDate = optionalDate(body.estimatedDate, "Fecha estimada");
+  if (estimatedDate && estimatedDate < todayInGuatemala()) {
+    throw new AppError("La fecha estimada debe ser hoy o una fecha futura", 422, "VALIDATION_ERROR");
+  }
   return {
     engineBrand: requireText(body.engineBrand, "Marca del motor"),
     engineModel: requireText(body.engineModel, "Modelo del motor"),
     engineSerial: optionalText(body.engineSerial, "Serie"),
     serviceType: requireText(body.serviceType, "Servicio"),
     description: requireText(body.description, "Descripción", 2000, { allowMultiline: true }),
-    estimatedDate: optionalDate(body.estimatedDate, "Fecha estimada"),
+    estimatedDate,
     intakeNotes: optionalText(body.intakeNotes, "Notas de recepción", 2000, { allowMultiline: true }),
     publicNote: optionalText(body.publicNote, "Nota pública", 2000, { allowMultiline: true }),
     priority

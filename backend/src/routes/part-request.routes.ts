@@ -17,6 +17,11 @@ const amount=(value:unknown,field:string,allowZero=false)=>{
  if(number>9999999999.99)throw new AppError(`${field} excede el límite`,422,"VALIDATION_ERROR");
  return number;
 };
+const quantity=(value:unknown)=>{
+ const number=amount(value,"Cantidad");
+ if(!Number.isInteger(number))throw new AppError("La cantidad debe ser un número entero",422,"VALIDATION_ERROR");
+ return number;
+};
 const repository=new PartRequestRepository();
 export const partRequestRouter=Router();
 partRequestRouter.use(requireAuthentication,requireRole("OPERATOR","ADMIN","INVENTORY"));
@@ -30,7 +35,7 @@ partRequestRouter.get("/",asyncHandler(async(req,res)=>{
  res.json({items:await repository.list(orderId,operator?req.appUser!.id:undefined)});
 }));
 partRequestRouter.post("/",requireRole("OPERATOR"),asyncHandler(async(req,res)=>{
- const input={orderId:uuid(req.body?.orderId),itemId:uuid(req.body?.itemId),quantity:amount(req.body?.quantity,"Cantidad"),reason:requireText(req.body?.reason,"Motivo",2000)};
+ const input={orderId:uuid(req.body?.orderId),itemId:uuid(req.body?.itemId),quantity:quantity(req.body?.quantity),reason:requireText(req.body?.reason,"Motivo",2000)};
  res.status(201).json(await repository.request(req.appUser!.id,input));
 }));
 partRequestRouter.post("/:id/review",requireRole("ADMIN","INVENTORY"),asyncHandler(async(req,res)=>{

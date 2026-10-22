@@ -55,12 +55,12 @@ body {
     visibility: visible !important;
   }
   body.printing-qr-modal .tracking-qr-printable {
-    position: absolute !important;
+    position: fixed !important;
     left: 50% !important;
-    top: 25mm !important;
+    top: 20mm !important;
     transform: translateX(-50%) !important;
     width: 95mm !important;
-    max-width: 100% !important;
+    max-width: calc(100% - 10mm) !important;
     margin: 0 !important;
     padding: 6mm !important;
     border: 2px solid #0f172a !important;
@@ -69,6 +69,25 @@ body {
     background: #ffffff !important;
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+  body.printing-qr-modal .tracking-qr-modal-overlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  body.printing-qr-modal .tracking-qr-modal-overlay > .relative {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
   body.printing-qr-modal .tracking-qr-no-print,
   body.printing-qr-modal .tracking-qr-modal-overlay {

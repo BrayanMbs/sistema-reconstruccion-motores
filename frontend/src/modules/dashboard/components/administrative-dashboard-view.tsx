@@ -9,6 +9,7 @@ import { StatusBadge } from "@/shared/components/status-badge";
 import { getErrorMessage } from "@/shared/utils/error-message";
 import { ClientDialog, emptyForm, type ClientForm } from "@/modules/clients/components/clients-view";
 import { validateEmail, validatePersonName, validateSafeText } from "@/shared/utils/validation";
+import { normalizeGuatemalaPhone, validateGuatemalaPhone } from "@/modules/clients/utils/phone";
 
 export function AdministrativeDashboardView() {
   const [data, setData] = useState<AdministrativeDashboard | null>(null);
@@ -22,14 +23,14 @@ export function AdministrativeDashboardView() {
     event.preventDefault();
     const validationError = validatePersonName(clientForm.fullName, "Nombre completo")
       ?? validateSafeText(clientForm.identification, "Número de identificación")
-      ?? (clientForm.phone ? validateSafeText(clientForm.phone, "Teléfono") : null)
+      ?? validateGuatemalaPhone(clientForm.phone)
       ?? (clientForm.email ? validateEmail(clientForm.email) : null)
       ?? (clientForm.address ? validateSafeText(clientForm.address, "Dirección") : null);
     if (validationError) { setClientError(validationError); return; }
     setClientError("");
     setSavingClient(true);
     try {
-      await apiRequest("/api/administrativo/clients", { method: "POST", body: JSON.stringify(clientForm) });
+      await apiRequest("/api/administrativo/clients", { method: "POST", body: JSON.stringify({ ...clientForm, phone: normalizeGuatemalaPhone(clientForm.phone) || null }) });
       setShowClientDialog(false);
       setClientForm(emptyForm);
       const refreshed = await apiRequest<AdministrativeDashboard>("/api/administrativo/dashboard");

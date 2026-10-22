@@ -74,22 +74,13 @@ export function OperationalShell({ children }: PropsWithChildren) {
       onSignOut={signOut}
       brandIcon="engineering"
       desktopHeaderContent={
-        <>
-          <div className="relative hidden w-full max-w-xl lg:block">
-            <Icon name="search" className="absolute left-3 top-2.5 text-slate-500" />
-            <input
-              className="h-10 w-full rounded-lg bg-slate-100 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Buscar órdenes, piezas, tareas..."
-            />
-          </div>
-          <Link
-            href="/operativo/notificaciones"
-            className="ml-auto hidden rounded-full p-2 text-slate-600 hover:bg-slate-100 lg:block"
-            aria-label="Notificaciones"
-          >
-            <Icon name="history_edu" />
-          </Link>
-        </>
+        <Link
+          href="/operativo/notificaciones"
+          className="ml-auto hidden rounded-full p-2 text-slate-600 hover:bg-slate-100 lg:block"
+          aria-label="Notificaciones"
+        >
+          <Icon name="history_edu" />
+        </Link>
       }
     >
       {children}

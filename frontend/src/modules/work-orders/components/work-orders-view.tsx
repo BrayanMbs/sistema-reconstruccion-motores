@@ -9,6 +9,7 @@ import { WorkOrderFilters, WorkOrderTable } from "./work-order-shared";
 import { OrderTimeline } from "./order-timeline";
 import { TrackingShareActions } from "@/modules/public-tracking/components/tracking-share-actions";
 import { validateSafeText } from "@/shared/utils/validation";
+import { isTodayOrFutureDate, todayDateInputValue } from "@/shared/utils/date-input";
 
 type OrderForm = { clientId: string; engineBrand: string; engineModel: string; engineSerial: string; serviceType: string; description: string; intakeNotes: string; publicNote: string; estimatedDate: string; priority: "NORMAL" | "HIGH" | "URGENT" };
 const blankOrder: OrderForm = { clientId: "", engineBrand: "", engineModel: "", engineSerial: "", serviceType: "Diagnóstico", description: "", intakeNotes: "", publicNote: "", estimatedDate: "", priority: "NORMAL" };
@@ -146,7 +147,7 @@ function OrderOperationsDialog({ order, close, completed }: { order: WorkOrder; 
                 <option key={item.id} value={item.id}>{item.sku} · {item.name} ({item.stockQuantity} {item.unit})</option>
               ))}
             </select>
-            <input className="stitch-input" min="0.01" step="0.01" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+            <input className="stitch-input" min="1" step="1" type="number" value={quantity} onChange={(event) => { const value = event.target.value; if (/^\d*$/.test(value)) setQuantity(value); }} />
             <button disabled={saving} className="stitch-button stitch-button-primary">Agregar</button>
           </form>
           <div className="mt-4 min-w-0">
@@ -211,6 +212,10 @@ function OrderWizard({ close, completed }: { close: () => void; completed: () =>
       }
     }
     if (step === 3) {
+      if (!isTodayOrFutureDate(form.estimatedDate)) {
+        setError("La fecha estimada debe ser hoy o una fecha futura.");
+        return;
+      }
       if (!form.serviceType || !form.description) {
         setError("Completa el servicio y la descripción.");
         return;
@@ -234,6 +239,11 @@ function OrderWizard({ close, completed }: { close: () => void; completed: () =>
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!isTodayOrFutureDate(form.estimatedDate)) {
+      setError("La fecha estimada debe ser hoy o una fecha futura.");
+      setStep(3);
+      return;
+    }
     setSaving(true);
     try {
       const result = await apiRequest<{ order: WorkOrder }>("/api/admin/work-orders", {
@@ -370,7 +380,7 @@ function OrderWizard({ close, completed }: { close: () => void; completed: () =>
               <Label label="Descripción de fallas o servicio"><textarea className="stitch-input min-h-24 py-2" value={form.description} onChange={(event) => set("description", event.target.value)} /></Label>
               <Label label="Notas de recepción"><textarea className="stitch-input min-h-20 py-2" value={form.intakeNotes} onChange={(event) => set("intakeNotes", event.target.value)} /></Label>
               <Label label="Nota de seguimiento autorizada"><textarea className="stitch-input min-h-20 py-2" value={form.publicNote} onChange={(event) => set("publicNote", event.target.value)} /></Label>
-              <Label label="Fecha estimada"><input className="stitch-input" type="date" value={form.estimatedDate} onChange={(event) => set("estimatedDate", event.target.value)} /></Label>
+              <Label label="Fecha estimada"><input className="stitch-input" type="date" min={todayDateInputValue()} value={form.estimatedDate} onChange={(event) => set("estimatedDate", event.target.value)} /></Label>
             </div>
           </section>
         )}

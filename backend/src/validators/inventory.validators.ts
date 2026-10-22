@@ -20,9 +20,19 @@ const nonNegativeAmount = (value: unknown, field: string): number => {
   if (!Number.isFinite(parsed) || parsed < 0 || Math.round(parsed * 100) !== parsed * 100) throw new AppError(`${field} debe ser un número válido mayor o igual a cero con máximo 2 decimales`, 422, "VALIDATION_ERROR");
   return parsed;
 };
+const nonNegativeInteger = (value: unknown, field: string): number => {
+  const parsed = nonNegativeAmount(value, field);
+  if (!Number.isInteger(parsed)) throw new AppError(`${field} debe ser un número entero`, 422, "VALIDATION_ERROR");
+  return parsed;
+};
 const positiveAmount = (value: unknown, field: string): number => {
   const parsed = nonNegativeAmount(value, field);
   if (parsed <= 0) throw new AppError(`${field} debe ser mayor que cero`, 422, "VALIDATION_ERROR");
+  return parsed;
+};
+const positiveInteger = (value: unknown, field: string): number => {
+  const parsed = positiveAmount(value, field);
+  if (!Number.isInteger(parsed)) throw new AppError(`${field} debe ser un número entero`, 422, "VALIDATION_ERROR");
   return parsed;
 };
 const optionalBoolean = (value: unknown, fallback: boolean): boolean => value === undefined ? fallback : value === true || value === "true";
@@ -33,8 +43,8 @@ export const validateCreateInventoryItem = (body: Record<string, unknown>): Crea
   category: requireText(body.category ?? "Otros", "Categoría", 100), brand: optionalText(body.brand, "Marca", 120),
   partNumber: optionalText(body.partNumber, "Número de parte", 120), description: optionalText(body.description, "Descripción", 2000),
   compatibility: optionalText(body.compatibility, "Compatibilidad", 2000), unit: requireText(body.unit, "Unidad", 40),
-  location: optionalText(body.location, "Ubicación", 180), minimumStock: nonNegativeAmount(body.minimumStock ?? 0, "Stock mínimo"),
-  initialStock: nonNegativeAmount(body.initialStock ?? body.stockQuantity ?? 0, "Existencia inicial"),
+  location: optionalText(body.location, "Ubicación", 180), minimumStock: nonNegativeInteger(body.minimumStock ?? 0, "Stock mínimo"),
+  initialStock: nonNegativeInteger(body.initialStock ?? body.stockQuantity ?? 0, "Existencia inicial"),
   referenceUnitCost: nonNegativeAmount(body.referenceUnitCost ?? 0, "Costo unitario de referencia"),
   referenceSupplier: optionalText(body.referenceSupplier, "Proveedor de referencia", 180), isActive: optionalBoolean(body.isActive, true)
 });
@@ -48,7 +58,7 @@ export const validateMovement = (body: Record<string, unknown>, kind: "ENTRY" | 
   if (!(kind === "ENTRY" ? entryReasons : exitReasons).includes(reason)) throw new AppError("Motivo de movimiento no válido", 422, "VALIDATION_ERROR");
   const workOrderId = optionalText(body.workOrderId, "Orden relacionada", 80);
   if (kind === "EXIT" && reason === "Uso en reparación" && !workOrderId) throw new AppError("La orden relacionada es obligatoria para uso en reparación", 422, "WORK_ORDER_REQUIRED");
-  return { quantity: positiveAmount(body.quantity, "Cantidad"), reason, referenceDocument: optionalText(body.referenceDocument, "Factura o referencia", 180), supplierReference: optionalText(body.supplierReference, "Proveedor", 180), workOrderId, observation: optionalText(body.observation, "Observación", 2000) };
+  return { quantity: positiveInteger(body.quantity, "Cantidad"), reason, referenceDocument: optionalText(body.referenceDocument, "Factura o referencia", 180), supplierReference: optionalText(body.supplierReference, "Proveedor", 180), workOrderId, observation: optionalText(body.observation, "Observación", 2000) };
 };
 export const validateStatus = (body: Record<string, unknown>): boolean => {
   if (typeof body.isActive !== "boolean") throw new AppError("El estado es obligatorio", 422, "VALIDATION_ERROR");
