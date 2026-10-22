@@ -1,0 +1,22 @@
+erDiagram
+    app_users { uuid id PK }
+    work_orders { uuid id PK }
+    inventory_items { uuid id PK }
+    work_order_inventory {
+        uuid work_order_id PK,FK
+        uuid inventory_item_id PK,FK
+    }
+    inventory_movements { uuid id PK }
+    part_requests { uuid id PK }
+    work_orders ||--o{ work_order_inventory : work_order_id
+    inventory_items ||--o{ work_order_inventory : inventory_item_id
+    app_users |o--o{ work_order_inventory : assigned_by
+    app_users |o--o{ inventory_items : created_by
+    app_users |o--o{ inventory_items : updated_by
+    inventory_items ||--o{ inventory_movements : inventory_item_id
+    work_orders |o--o{ inventory_movements : work_order_id
+    app_users ||--o{ inventory_movements : performed_by
+    work_orders ||--o{ part_requests : work_order_id
+    inventory_items ||--o{ part_requests : inventory_item_id
+    app_users ||--o{ part_requests : requested_by
+    app_users |o--o{ part_requests : reviewed_by

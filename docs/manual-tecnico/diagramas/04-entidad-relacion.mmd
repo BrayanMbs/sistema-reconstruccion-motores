@@ -1,0 +1,70 @@
+erDiagram
+    app_users {
+        uuid id PK
+    }
+    clients {
+        uuid id PK
+    }
+    work_orders {
+        uuid id PK
+    }
+    audit_events {
+        bigint id PK
+    }
+    inventory_items {
+        uuid id PK
+    }
+    work_order_inventory {
+        uuid work_order_id PK,FK
+        uuid inventory_item_id PK,FK
+    }
+    payments {
+        uuid id PK
+    }
+    app_settings {
+        string setting_key PK
+    }
+    work_order_events {
+        uuid id PK
+    }
+    operator_notifications {
+        uuid id PK
+    }
+    inventory_movements {
+        uuid id PK
+    }
+    auth_login_attempts {
+        uuid id PK
+    }
+    cash_sessions {
+        uuid id PK
+    }
+    part_requests {
+        uuid id PK
+    }
+    clients ||--o{ work_orders : client_id
+    app_users |o--o{ work_orders : created_by
+    app_users |o--o{ audit_events : actor_id
+    work_orders ||--o{ work_order_inventory : work_order_id
+    inventory_items ||--o{ work_order_inventory : inventory_item_id
+    app_users |o--o{ work_order_inventory : assigned_by
+    work_orders ||--o{ payments : work_order_id
+    app_users |o--o{ payments : received_by
+    app_users |o--o{ app_settings : updated_by
+    app_users |o--o{ work_orders : assigned_worker_id
+    work_orders ||--o{ work_order_events : work_order_id
+    app_users |o--o{ work_order_events : actor_id
+    app_users |o--o{ work_order_events : subject_worker_id
+    app_users ||--o{ operator_notifications : user_id
+    work_orders |o--o{ operator_notifications : work_order_id
+    inventory_items ||--o{ inventory_movements : inventory_item_id
+    work_orders |o--o{ inventory_movements : work_order_id
+    app_users ||--o{ inventory_movements : performed_by
+    app_users |o--o{ inventory_items : created_by
+    app_users |o--o{ inventory_items : updated_by
+    app_users ||--o{ cash_sessions : cashier_id
+    cash_sessions |o--o{ payments : cash_session_id
+    work_orders ||--o{ part_requests : work_order_id
+    inventory_items ||--o{ part_requests : inventory_item_id
+    app_users ||--o{ part_requests : requested_by
+    app_users |o--o{ part_requests : reviewed_by

@@ -1,0 +1,14 @@
+erDiagram
+    clients { uuid id PK }
+    work_orders { uuid id PK }
+    app_users { uuid id PK }
+    work_order_events { uuid id PK }
+    operator_notifications { uuid id PK }
+    clients ||--o{ work_orders : client_id
+    app_users |o--o{ work_orders : created_by
+    app_users |o--o{ work_orders : assigned_worker_id
+    work_orders ||--o{ work_order_events : work_order_id
+    app_users |o--o{ work_order_events : actor_id
+    app_users |o--o{ work_order_events : subject_worker_id
+    app_users ||--o{ operator_notifications : user_id
+    work_orders |o--o{ operator_notifications : work_order_id

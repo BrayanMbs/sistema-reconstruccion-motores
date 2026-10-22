@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor U as Usuario
+    participant F as LoginForm
+    participant B as AuthService
+    participant D as PostgreSQL
+    participant S as Supabase Auth
+    U->>F: Correo y clave
+    F->>B: POST /api/auth/login
+    B->>D: Verificar bloqueos cuenta e IP
+    B->>S: signInWithPassword
+    S-->>B: Identidad y sesion
+    B->>D: Perfil activo y registro de acceso
+    B-->>F: user y tokens
+    F->>S: SDK setSession
+    F-->>U: Inicio del rol o cambio temporal
+    F->>B: Recurso con Bearer
+    B->>S: getUser token
+    B->>D: Consultar perfil activo
+    B-->>F: Respuesta sujeta a rol y bandera

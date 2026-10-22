@@ -1,0 +1,14 @@
+erDiagram
+    app_users { uuid id PK }
+    work_orders { uuid id PK }
+    payments { uuid id PK }
+    cash_sessions { uuid id PK }
+    audit_events { bigint id PK }
+    app_settings { string setting_key PK }
+    auth_login_attempts { uuid id PK }
+    work_orders ||--o{ payments : work_order_id
+    app_users |o--o{ payments : received_by
+    cash_sessions |o--o{ payments : cash_session_id
+    app_users ||--o{ cash_sessions : cashier_id
+    app_users |o--o{ audit_events : actor_id
+    app_users |o--o{ app_settings : updated_by

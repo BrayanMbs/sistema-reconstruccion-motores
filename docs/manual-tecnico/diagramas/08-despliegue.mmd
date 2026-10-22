@@ -1,0 +1,9 @@
+flowchart TD
+    Browser[Navegador] -->|HTTPS| Frontend[Vercel proyecto frontend]
+    Browser -->|HTTPS JSON Bearer| Backend[Vercel proyecto backend]
+    Frontend -->|Codigo cliente servido| Browser
+    Browser -->|SDK| Auth[Supabase Auth]
+    Backend -->|Validar identidad| Auth
+    Backend -->|pg y TLS configurado| Pooler[Pooler Supabase]
+    Pooler --> DB[(PostgreSQL)]
+    Backend --> Health[Liveness y readiness]

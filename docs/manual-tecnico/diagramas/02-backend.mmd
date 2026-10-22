@@ -1,0 +1,10 @@
+flowchart TD
+    App[app.ts y middleware global] --> Router[Router con sesion y rol]
+    Router --> Controller[Controller y validators]
+    Controller --> Service[Service]
+    Service --> Repository[Repository y mapeo]
+    Repository --> Pool[databasePool]
+    Pool --> DB[(PostgreSQL)]
+    Router -->|Caja y repuestos inline| Repository
+    Service --> Auth[Supabase Auth]
+    Controller --> Error[AppError y errorHandler]
