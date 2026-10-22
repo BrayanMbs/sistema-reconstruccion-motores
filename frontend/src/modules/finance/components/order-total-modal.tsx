@@ -93,18 +93,18 @@ export function OrderTotalModal({
       aria-modal="true"
       aria-labelledby="order-total-modal-title"
     >
-      <div className="stitch-card w-full max-w-lg overflow-hidden p-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+      <div className="stitch-card max-h-[90dvh] w-full max-w-xl overflow-y-auto p-5 shadow-2xl sm:p-6">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
               <Icon name="edit" />
             </div>
             <div>
               <h3 id="order-total-modal-title" className="text-xl font-bold text-slate-900">
                 {activeSummary?.totalAmount === null ? "Definir cotización / total" : "Actualizar total de orden"}
               </h3>
-              <p className="text-xs text-slate-500">
-                Establece el monto total aprobado para la reconstrucción
+              <p className="mt-1 text-sm text-slate-500">
+                Define el importe final aprobado para esta orden.
               </p>
             </div>
           </div>
@@ -148,8 +148,8 @@ export function OrderTotalModal({
           )}
 
           {activeSummary && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <span className="block text-slate-500">Orden de trabajo</span>
                   <span className="font-semibold text-slate-900">{activeSummary.workOrderCode}</span>
@@ -178,8 +178,8 @@ export function OrderTotalModal({
             <label htmlFor="order-total-amount" className="mb-1.5 block text-sm font-semibold text-slate-700">
               Monto total aprobado (Q) <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 font-semibold text-slate-500">
+            <div className={`flex overflow-hidden rounded-lg border bg-white focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 ${isLessThanPaid ? "border-red-400" : "border-slate-300"}`}>
+              <span aria-hidden="true" className="flex shrink-0 items-center border-r border-slate-200 bg-slate-50 px-4 font-semibold text-slate-500">
                 Q
               </span>
               <input
@@ -190,7 +190,7 @@ export function OrderTotalModal({
                 step="0.01"
                 disabled={!activeSummary}
                 placeholder="0.00"
-                className={`stitch-input w-full pl-8 ${isLessThanPaid ? "border-red-400 focus:border-red-500" : ""}`}
+                className="h-12 w-full min-w-0 border-0 bg-transparent px-3 text-lg font-semibold tabular-nums text-slate-900 outline-none"
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
               />
@@ -200,12 +200,13 @@ export function OrderTotalModal({
                 El total aprobado no puede ser menor a los pagos ya registrados (Q {activeSummary.totalPaid.toFixed(2)}).
               </p>
             )}
-            <p className="mt-1 text-xs text-slate-500">
-              Al guardar, el saldo pendiente y el estado de la orden se recalcularán automáticamente.
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              Incluye los repuestos ya aprobados. El saldo y el estado del pago se actualizarán al guardar.
             </p>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+          {hasValidTotal && !isLessThanPaid && activeSummary && <div aria-live="polite" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"><span className="text-sm text-slate-600">Saldo pendiente al guardar</span><strong className="text-lg tabular-nums text-slate-900">{new Intl.NumberFormat("es-GT", {style:"currency",currency:"GTQ"}).format(Math.max(0,numTotal-activeSummary.totalPaid))}</strong></div>}
+          <div className="mt-6 flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               className="stitch-button stitch-button-secondary"

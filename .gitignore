@@ -7,6 +7,10 @@ coverage/
 .env.*.local
 !.env.example
 *.log
+*.tsbuildinfo
+artifacts/
+frontend/AGENTS.md
+frontend/CLAUDE.md
 .idea/
 .vscode/
 .DS_Store

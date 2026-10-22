@@ -8,12 +8,19 @@ import { Icon } from "@/shared/components/icon";
 import { WorkOrderFilters, WorkOrderTable } from "./work-order-shared";
 import { OrderTimeline } from "./order-timeline";
 import { TrackingShareActions } from "@/modules/public-tracking/components/tracking-share-actions";
+import { validateSafeText } from "@/shared/utils/validation";
 
 type OrderForm = { clientId: string; engineBrand: string; engineModel: string; engineSerial: string; serviceType: string; description: string; intakeNotes: string; publicNote: string; estimatedDate: string; priority: "NORMAL" | "HIGH" | "URGENT" };
 const blankOrder: OrderForm = { clientId: "", engineBrand: "", engineModel: "", engineSerial: "", serviceType: "Diagnóstico", description: "", intakeNotes: "", publicNote: "", estimatedDate: "", priority: "NORMAL" };
 
-export function WorkOrdersView() {
-  const [data, setData] = useState<Paginated<WorkOrder> | null>(null); const [search, setSearch] = useState(""); const [status, setStatus] = useState(""); const [error, setError] = useState(""); const [selected, setSelected] = useState<WorkOrder | null>(null); const [creating, setCreating] = useState(false);
+export function WorkOrdersView({
+  initialStatus = "",
+  initialSearch = ""
+}: {
+  initialStatus?: string;
+  initialSearch?: string;
+} = {}) {
+  const [data, setData] = useState<Paginated<WorkOrder> | null>(null); const [search, setSearch] = useState(initialSearch); const [status, setStatus] = useState(initialStatus); const [error, setError] = useState(""); const [selected, setSelected] = useState<WorkOrder | null>(null); const [creating, setCreating] = useState(false);
   const load = useCallback(async () => { try { const query = new URLSearchParams({ limit: "20" }); if (search) query.set("search", search); if (status) query.set("status", status); setData(await apiRequest<Paginated<WorkOrder>>(`/api/admin/work-orders?${query}`)); } catch (caught) { setError((caught as Error).message); } }, [search, status]);
   useEffect(() => { void load(); }, [load]);
   const detail = async (id: string) => { try { const result = await apiRequest<{ order: WorkOrder }>(`/api/admin/work-orders/${id}`); setSelected(result.order); } catch (caught) { setError((caught as Error).message); } };
@@ -132,7 +139,7 @@ function OrderOperationsDialog({ order, close, completed }: { order: WorkOrder; 
 
         <section className="mt-5 rounded-lg border border-slate-200 p-4">
           <h4 className="font-bold">Insumos de esta orden</h4>
-          <form onSubmit={allocate} className="mt-3 grid gap-3 sm:grid-cols-[1fr_120px_auto]">
+          <form onSubmit={allocate} className="mt-3 grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_120px_auto]">
             <select className="stitch-input" value={itemId} onChange={(event) => setItemId(event.target.value)}>
               <option value="">Seleccione un artículo de inventario</option>
               {inventory.filter((item) => item.stockQuantity > 0).map((item) => (
@@ -142,14 +149,15 @@ function OrderOperationsDialog({ order, close, completed }: { order: WorkOrder; 
             <input className="stitch-input" min="0.01" step="0.01" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             <button disabled={saving} className="stitch-button stitch-button-primary">Agregar</button>
           </form>
-          <div className="mt-4 overflow-x-auto">
-            <table className="stitch-table min-w-0">
-              <thead><tr><th>Artículo</th><th>Cantidad</th><th></th></tr></thead>
+          <div className="mt-4 min-w-0">
+            <table className="stitch-table !min-w-0 table-fixed">
+              <colgroup><col className="w-[48%]" /><col className="w-[32%]" /><col className="w-[20%]" /></colgroup>
+              <thead><tr><th>Artículo</th><th>Cantidad</th><th className="w-20"></th></tr></thead>
               <tbody>
                 {allocations.map((item) => (
                   <tr key={item.inventoryItemId}>
-                    <td><strong>{item.name}</strong><small className="ml-2 text-slate-500">{item.sku}</small></td>
-                    <td>{item.quantity} {item.unit}</td>
+                    <td className="break-words"><strong>{item.name}</strong><small className="ml-2 text-slate-500">{item.sku}</small></td>
+                    <td className="break-words">{item.quantity} {item.unit}</td>
                     <td className="text-right">
                       <button className="text-sm font-semibold text-red-700 hover:underline" onClick={() => void release(item.inventoryItemId)}>Quitar</button>
                     </td>
@@ -184,10 +192,44 @@ function OrderWizard({ close, completed }: { close: () => void; completed: () =>
 
   const set = (key: keyof OrderForm, value: string) => setForm({ ...form, [key]: value });
   const advance = () => {
-    if (step === 1 && !form.clientId) setError("Selecciona un cliente para continuar.");
-    else if (step === 2 && (!form.engineBrand || !form.engineModel)) setError("Completa la marca y modelo del motor.");
-    else if (step === 3 && (!form.serviceType || !form.description)) setError("Completa el servicio y la descripción.");
-    else { setError(""); setStep(step + 1); }
+    if (step === 1 && !form.clientId) {
+      setError("Selecciona un cliente para continuar.");
+      return;
+    }
+    if (step === 2) {
+      if (!form.engineBrand || !form.engineModel) {
+        setError("Completa la marca y modelo del motor.");
+        return;
+      }
+      const brandErr = validateSafeText(form.engineBrand, "Marca del motor");
+      if (brandErr) { setError(brandErr); return; }
+      const modelErr = validateSafeText(form.engineModel, "Modelo del motor");
+      if (modelErr) { setError(modelErr); return; }
+      if (form.engineSerial) {
+        const serialErr = validateSafeText(form.engineSerial, "Serie del motor");
+        if (serialErr) { setError(serialErr); return; }
+      }
+    }
+    if (step === 3) {
+      if (!form.serviceType || !form.description) {
+        setError("Completa el servicio y la descripción.");
+        return;
+      }
+      const serviceErr = validateSafeText(form.serviceType, "Servicio");
+      if (serviceErr) { setError(serviceErr); return; }
+      const descErr = validateSafeText(form.description, "Descripción");
+      if (descErr) { setError(descErr); return; }
+      if (form.intakeNotes) {
+        const intakeErr = validateSafeText(form.intakeNotes, "Notas de recepción");
+        if (intakeErr) { setError(intakeErr); return; }
+      }
+      if (form.publicNote) {
+        const pubErr = validateSafeText(form.publicNote, "Nota pública");
+        if (pubErr) { setError(pubErr); return; }
+      }
+    }
+    setError("");
+    setStep(step + 1);
   };
 
   const submit = async (event: FormEvent) => {
